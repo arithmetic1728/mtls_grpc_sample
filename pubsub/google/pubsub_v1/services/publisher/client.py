@@ -119,6 +119,16 @@ class PublisherClient(metaclass=PublisherClientMeta):
         if isinstance(client_options, dict):
             client_options = ClientOptions.from_dict(client_options)
 
+        api_mtls_endpoint = None
+        client_cert_callback = None
+        if hasattr(client_options, "api_mtls_endpoint"):
+            api_mtls_endpoint = client_options["api_mtls_endpoint"]
+        if hasattr(client_options, "client_cert_callback"):
+            client_cert_callback = client_options["client_cert_callback"]
+        if api_mtls_endpoint or client_cert_callback:
+            # we will create the mTLS transport, ignore the given transport.
+            transport = None
+
         # Save or instantiate the transport.
         # Ordinarily, we provide the transport, but allowing a custom transport
         # instance provides an extensibility point for unusual situations.
@@ -134,6 +144,8 @@ class PublisherClient(metaclass=PublisherClientMeta):
             self._transport = Transport(
                 credentials=credentials,
                 host=client_options.api_endpoint or "pubsub.googleapis.com",
+                api_mtls_endpoint=api_mtls_endpoint,
+                client_cert_callback=client_cert_callback,
             )
 
     def create_topic(

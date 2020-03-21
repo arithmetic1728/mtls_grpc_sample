@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-from typing import Callable, Dict
+from typing import Callable, Dict, Tuple
 
 from google.api_core import grpc_helpers  # type: ignore
 from google.auth import credentials  # type: ignore
@@ -47,7 +47,9 @@ class PublisherGrpcTransport(PublisherTransport):
         *,
         host: str = "pubsub.googleapis.com",
         credentials: credentials.Credentials = None,
-        channel: grpc.Channel = None
+        channel: grpc.Channel = None,
+        api_mtls_endpoint: str = None,
+        client_cert_callback: Callable[[], Tuple[bytes, bytes]] = None
     ) -> None:
         """Instantiate the transport.
 
@@ -62,18 +64,36 @@ class PublisherGrpcTransport(PublisherTransport):
             channel (Optional[grpc.Channel]): A ``Channel`` instance through
                 which to make calls.
         """
-        # Sanity check: Ensure that channel and credentials are not both
-        # provided.
-        if channel:
-            credentials = False
+        if api_mtls_endpoint or client_cert_callback:
+            # override the endpoint
+            if api_mtls_endpoint:
+                host = api_mtls_endpoint
+
+            # create SSL credentials
+            if client_cert_callback:
+                cert, key = client_cert_callback()
+                ssl_credentials = grpc.ssl_channel_credentials(
+                    certificate_chain=cert, private_key=key
+                )
+            else:
+                # try SSL ADC. May raise exceptions.
+                ssl_credentials = credentils.SslCredentials().ssl_credentials
+
+            # create a new channel. The provided one is ignored.
+            self._grpc_channel = grpc_helpers.create_channel(
+                self._host,
+                credentials=credentials,
+                ssl_credentials=ssl_credentials,
+                scopes=self.AUTH_SCOPES,
+            )
+        else:
+            if channel:
+                credentials = False
+                self._grpc_channel = channel
 
         # Run the base constructor.
         super().__init__(host=host, credentials=credentials)
         self._stubs = {}  # type: Dict[str, Callable]
-
-        # If a channel was explicitly provided, set it.
-        if channel:
-            self._grpc_channel = channel
 
     @classmethod
     def create_channel(
