@@ -16,7 +16,7 @@
 #
 
 from collections import OrderedDict
-from typing import Dict, Iterable, Iterator, Sequence, Tuple, Type, Union
+from typing import Callable, Dict, Iterable, Iterator, Sequence, Tuple, Type, Union
 import pkg_resources
 
 import google.api_core.client_options as ClientOptions  # type: ignore
@@ -102,6 +102,8 @@ class PublisherClient(metaclass=PublisherClientMeta):
         credentials: credentials.Credentials = None,
         transport: Union[str, PublisherTransport] = None,
         client_options: ClientOptions = DEFAULT_OPTIONS,
+        api_mtls_endpoint: str = None,
+        client_cert_callback: Callable[[], Tuple[bytes, bytes]] = None,
     ) -> None:
         """Instantiate the publisher client.
 
@@ -119,12 +121,12 @@ class PublisherClient(metaclass=PublisherClientMeta):
         if isinstance(client_options, dict):
             client_options = ClientOptions.from_dict(client_options)
 
-        api_mtls_endpoint = None
-        client_cert_callback = None
-        if hasattr(client_options, "api_mtls_endpoint"):
-            api_mtls_endpoint = client_options["api_mtls_endpoint"]
-        if hasattr(client_options, "client_cert_callback"):
-            client_cert_callback = client_options["client_cert_callback"]
+        # api_mtls_endpoint = None
+        # client_cert_callback = None
+        # if hasattr(client_options, "api_mtls_endpoint"):
+        #     api_mtls_endpoint = client_options["api_mtls_endpoint"]
+        # if hasattr(client_options, "client_cert_callback"):
+        #     client_cert_callback = client_options["client_cert_callback"]
         if api_mtls_endpoint or client_cert_callback:
             # we will create the mTLS transport, ignore the given transport.
             transport = None

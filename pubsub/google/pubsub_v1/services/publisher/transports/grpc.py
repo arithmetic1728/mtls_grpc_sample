@@ -19,6 +19,7 @@ from typing import Callable, Dict, Tuple
 
 from google.api_core import grpc_helpers  # type: ignore
 from google.auth import credentials  # type: ignore
+from google.auth.transport.grpc import SslCredentials  # type: ignore
 
 import grpc  # type: ignore
 
@@ -77,11 +78,11 @@ class PublisherGrpcTransport(PublisherTransport):
                 )
             else:
                 # try SSL ADC. May raise exceptions.
-                ssl_credentials = credentils.SslCredentials().ssl_credentials
+                ssl_credentials = SslCredentials().ssl_credentials
 
             # create a new channel. The provided one is ignored.
             self._grpc_channel = grpc_helpers.create_channel(
-                self._host,
+                host,
                 credentials=credentials,
                 ssl_credentials=ssl_credentials,
                 scopes=self.AUTH_SCOPES,
