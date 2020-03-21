@@ -5,6 +5,11 @@ gcloud auth application-default login --scopes="https://www.googleapis.com/auth/
 gcloud config set project sijun-mtls-demo
 ```
 
+Download the repo:
+```
+git clone --recursive https://github.com/arithmetic1728/mtls_grpc_sample.git
+```
+
 Create a virtual environment:
 ```
 pyenv virtualenv mtls_grpc_sample
