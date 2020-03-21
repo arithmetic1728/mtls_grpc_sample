@@ -23,3 +23,9 @@ python -m pip install -e .
 ```
 
 Run the sample, `python sample.py`
+
+This repo also contains a http sample. To run it:
+```
+python -m pip install pyopenssl
+python http_sample.py
+```
