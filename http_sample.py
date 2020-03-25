@@ -18,7 +18,7 @@ print(project_id)
 
 
 def use_requests():
-    print("====== Test http call with requests lib =====\n\n\n")
+    print("\n\n====== Test http call with requests lib =====\n")
     authed_session = google.auth.transport.requests.AuthorizedSession(credentials)
     authed_session.configure_mtls_channel()
 
@@ -33,7 +33,7 @@ def use_requests():
 
 
 def use_urllib3():
-    print("====== Test http call with urllib3 lib =====\n\n\n")
+    print("\n\n====== Test http call with urllib3 lib =====\n")
     authed_http = google.auth.transport.urllib3.AuthorizedHttp(credentials)
     is_mtls = authed_http.configure_mtls_channel()
 
