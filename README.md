@@ -22,7 +22,7 @@ locally with command
 python -m pip install -e .
 ```
 
-Run the sample, `python sample.py`
+Run the sample, `python grpc_sample.py`
 
 This repo also contains a http sample. To run it:
 ```
