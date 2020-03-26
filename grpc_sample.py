@@ -1,5 +1,4 @@
-import google.auth
-from google.oauth2 import credentials
+import google.oauth2.credentials
 from google.pubsub import PublisherClient
 import google.api_core.client_options as ClientOptions
 
@@ -10,7 +9,7 @@ def call():
     print("=========== project id ====")
     print(project_id)
 
-    cred = credentials.UserAccessTokenCredentials() 
+    cred = google.oauth2.credentials.UserAccessTokenCredentials() 
     client = PublisherClient(
         credentials=cred, api_mtls_endpoint="pubsub.mtls.googleapis.com"
     )
