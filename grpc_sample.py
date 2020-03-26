@@ -1,22 +1,18 @@
 import google.auth
+from google.oauth2 import credentials
 from google.pubsub import PublisherClient
 import google.api_core.client_options as ClientOptions
 
 
 def call():
-    credentials, project_id = google.auth.default()
+    _, project_id = google.auth.default()
 
     print("=========== project id ====")
     print(project_id)
-    print("=========== credentials ====")
-    print(credentials)
 
-    credentials = google.auth.credentials.with_scopes_if_required(
-        credentials, ["https://www.googleapis.com/auth/pubsub"]
-    )
-
+    cred = credentials.UserAccessTokenCredentials() 
     client = PublisherClient(
-        credentials=credentials, api_mtls_endpoint="pubsub.mtls.googleapis.com"
+        credentials=cred, api_mtls_endpoint="pubsub.mtls.googleapis.com"
     )
 
     project = "projects/{}".format(project_id)

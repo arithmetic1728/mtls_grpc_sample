@@ -5,14 +5,13 @@ import google.auth
 import google.auth.credentials
 import google.auth.transport.requests
 import google.auth.transport.urllib3
+from google.oauth2 import credentials
 
 MTLS_ENDPOINT = "https://pubsub.mtls.googleapis.com/v1/projects/{}/topics"
 REGULAR_ENDPOINT = "https://pubsub.googleapis.com/v1/projects/{}/topics"
 
-credentials, project_id = google.auth.default()
-credentials = google.auth.credentials.with_scopes_if_required(
-    credentials, ["https://www.googleapis.com/auth/pubsub"]
-)
+_, project_id = google.auth.default()
+credentials = credentials.UserAccessTokenCredentials()
 print("project_id is: ")
 print(project_id)
 
