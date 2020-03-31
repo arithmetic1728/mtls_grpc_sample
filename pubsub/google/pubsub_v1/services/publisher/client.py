@@ -146,6 +146,15 @@ class PublisherClient(metaclass=PublisherClientMeta):
                 transport to use. If set to None, a transport is chosen
                 automatically.
             client_options (ClientOptions): Custom options for the client.
+                (1) The ``api_endpoint`` property can be used to override the
+                default endpoint provided by the client.
+                (2) If ``transport`` argument is None, ``client_options`` can be
+                used to create a mutual TLS transport. If ``api_endpoint`` is
+                provided and different from the default endpoint, or the
+                ``client_cert_source`` property is provided,  mutual TLS
+                transport will be created if client SSL credentials are found.
+                Client SSL credentials are obtained from ``client_cert_source``
+                or application default SSL credentials.
         """
         if isinstance(client_options, dict):
             client_options = ClientOptions.from_dict(client_options)
@@ -158,6 +167,7 @@ class PublisherClient(metaclass=PublisherClientMeta):
         # Ordinarily, we provide the transport, but allowing a custom transport
         # instance provides an extensibility point for unusual situations.
         if isinstance(transport, PublisherTransport):
+            # transport is a PublisherTransport instance.
             if credentials:
                 raise ValueError(
                     "When providing a transport instance, "
@@ -165,11 +175,13 @@ class PublisherClient(metaclass=PublisherClientMeta):
                 )
             self._transport = transport
         elif transport is not None:
+            # transport is a string representing the name.
             Transport = type(self).get_transport_class(transport)
             self._transport = Transport(
                 credentials=credentials, host=client_options.api_endpoint
             )
         else:
+            # transport is None, we will create a transport instance.
             # Figure out if mTLS channel should be created.
             api_mtls_endpoint = None
 

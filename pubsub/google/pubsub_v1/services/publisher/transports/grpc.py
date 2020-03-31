@@ -64,6 +64,14 @@ class PublisherGrpcTransport(PublisherTransport):
                 This argument is ignored if ``channel`` is provided.
             channel (Optional[grpc.Channel]): A ``Channel`` instance through
                 which to make calls.
+            api_mtls_endpoint (Optional[str]): The mutual TLS endpoint. If
+                provided, it overrides the ``host`` argument and tries to create
+                a mutual TLS channel with client SSL credentials from
+                ``client_cert_source`` or applicatin default SSL credentials.
+            client_cert_source (Optional[Callable[[], Tuple[bytes, bytes]]]): A
+                callback to provide client SSL certificate bytes and private key
+                bytes, both in PEM format. It is ignored if ``api_mtls_endpoint``
+                is None.
         """
         if channel:
             credentials = False
