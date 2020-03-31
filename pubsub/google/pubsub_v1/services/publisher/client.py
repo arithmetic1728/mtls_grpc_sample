@@ -34,6 +34,35 @@ from .transports.base import PublisherTransport
 from .transports.grpc import PublisherGrpcTransport
 
 
+def _get_default_mtls_endpoint(api_endpoint):
+    """Convert api endpoint to mTLS endpoint.
+
+    Convert "*.sandbox.googleapis.com" and "*.googleapis.com" to
+    "*.mtls.sandbox.googleapis.com" and "*.mtls.googleapis.com" respectively.
+
+    Args:
+        api_endpoint (str): the api endpoint to convert.
+
+    Returns:
+        str: converted mTLS api endpoint.
+    """
+    if (
+        api_endpoint.find("mtls.sandbox.googleapis.com") != -1
+        or api_endpoint.find("mtls.googleapis.com") != -1
+        or api_endpoint.find(".googleapis.com") == -1
+    ):
+        # If the endpoint is already mTLS or the endpoint is not a googleapi,
+        # there is no need to convert.
+        return api_endpoint
+
+    if api_endpoint.find(".sandbox.googleapis.com") != -1:
+        return api_endpoint.replace(
+            ".sandbox.googleapis.com", ".mtls.sandbox.googleapis.com"
+        )
+
+    return api_endpoint.replace(".googleapis.com", ".mtls.googleapis.com")
+
+
 class PublisherClientMeta(type):
     """Metaclass for the Publisher client.
 
@@ -69,7 +98,9 @@ class PublisherClient(metaclass=PublisherClientMeta):
     and to send messages to a topic.
     """
 
-    DEFAULT_OPTIONS = ClientOptions.ClientOptions(api_endpoint="pubsub.googleapis.com")
+    DEFAULT_ENDPOINT = "pubsub.googleapis.com"
+    DEFAULT_OPTIONS = ClientOptions.ClientOptions(api_endpoint=DEFAULT_ENDPOINT)
+    DEFAULT_MTLS_ENDPOINT = _get_default_mtls_endpoint(DEFAULT_ENDPOINT)
 
     @classmethod
     def from_service_account_file(cls, filename: str, *args, **kwargs):
@@ -102,8 +133,6 @@ class PublisherClient(metaclass=PublisherClientMeta):
         credentials: credentials.Credentials = None,
         transport: Union[str, PublisherTransport] = None,
         client_options: ClientOptions = DEFAULT_OPTIONS,
-        api_mtls_endpoint: str = None,
-        client_cert_callback: Callable[[], Tuple[bytes, bytes]] = None,
     ) -> None:
         """Instantiate the publisher client.
 
@@ -121,15 +150,9 @@ class PublisherClient(metaclass=PublisherClientMeta):
         if isinstance(client_options, dict):
             client_options = ClientOptions.from_dict(client_options)
 
-        # api_mtls_endpoint = None
-        # client_cert_callback = None
-        # if hasattr(client_options, "api_mtls_endpoint"):
-        #     api_mtls_endpoint = client_options["api_mtls_endpoint"]
-        # if hasattr(client_options, "client_cert_callback"):
-        #     client_cert_callback = client_options["client_cert_callback"]
-        if api_mtls_endpoint or client_cert_callback:
-            # we will create the mTLS transport, ignore the given transport.
-            transport = None
+        # Set default api endpoint if not set.
+        if client_options.api_endpoint is None:
+            client_options.api_endpoint = DEFAULT_ENDPOINT
 
         # Save or instantiate the transport.
         # Ordinarily, we provide the transport, but allowing a custom transport
@@ -141,13 +164,29 @@ class PublisherClient(metaclass=PublisherClientMeta):
                     "provide its credentials directly."
                 )
             self._transport = transport
-        else:
+        elif transport is not None:
             Transport = type(self).get_transport_class(transport)
             self._transport = Transport(
+                credentials=credentials, host=client_options.api_endpoint
+            )
+        else:
+            # Figure out if mTLS channel should be created.
+            api_mtls_endpoint = None
+
+            # If the user overrides endpoint, use it as the mTLS endpoint. If the
+            # user doesn't override endpoint, but provides client_cert_source,
+            # use the default mTLS endpoint.
+            if client_options.api_endpoint != DEFAULT_ENDPOINT:
+                api_mtls_endpoint = client_options.api_endpoint
+            elif client_options.client_cert_source:
+                api_mtls_endpoint = DEFAULT_MTLS_ENDPOINT
+
+            Transport = type(self).get_transport_class()
+            self._transport = Transport(
                 credentials=credentials,
-                host=client_options.api_endpoint or "pubsub.googleapis.com",
+                host=client_options.api_endpoint,
                 api_mtls_endpoint=api_mtls_endpoint,
-                client_cert_callback=client_cert_callback,
+                client_cert_source=client_options.client_cert_source,
             )
 
     def create_topic(

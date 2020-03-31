@@ -50,7 +50,7 @@ class PublisherGrpcTransport(PublisherTransport):
         credentials: credentials.Credentials = None,
         channel: grpc.Channel = None,
         api_mtls_endpoint: str = None,
-        client_cert_callback: Callable[[], Tuple[bytes, bytes]] = None
+        client_cert_source: Callable[[], Tuple[bytes, bytes]] = None
     ) -> None:
         """Instantiate the transport.
 
@@ -65,19 +65,20 @@ class PublisherGrpcTransport(PublisherTransport):
             channel (Optional[grpc.Channel]): A ``Channel`` instance through
                 which to make calls.
         """
-        if api_mtls_endpoint or client_cert_callback:
-            # override the endpoint
-            if api_mtls_endpoint:
-                host = api_mtls_endpoint
+        if channel:
+            credentials = False
+            self._grpc_channel = channel
+        elif api_mtls_endpoint:
+            host = api_mtls_endpoint
 
-            # create SSL credentials
-            if client_cert_callback:
-                cert, key = client_cert_callback()
+            # Create SSL credentials with client_cert_source or application
+            # default SSL credentials.
+            if client_cert_source:
+                cert, key = client_cert_source()
                 ssl_credentials = grpc.ssl_channel_credentials(
                     certificate_chain=cert, private_key=key
                 )
             else:
-                # try SSL ADC. May raise exceptions.
                 ssl_credentials = SslCredentials().ssl_credentials
 
             # create a new channel. The provided one is ignored.
@@ -87,10 +88,6 @@ class PublisherGrpcTransport(PublisherTransport):
                 ssl_credentials=ssl_credentials,
                 scopes=self.AUTH_SCOPES,
             )
-        else:
-            if channel:
-                credentials = False
-                self._grpc_channel = channel
 
         # Run the base constructor.
         super().__init__(host=host, credentials=credentials)
