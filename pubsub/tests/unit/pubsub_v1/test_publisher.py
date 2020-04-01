@@ -32,6 +32,29 @@ from google.pubsub_v1.services.publisher import transports
 from google.pubsub_v1.types import pubsub
 
 
+def test__get_default_mtls_endpoint():
+    api_endpoint = "example.googleapis.com"
+    api_mtls_endpoint = "example.mtls.googleapis.com"
+    sandbox_endpoint = "example.sandbox.googleapis.com"
+    sandbox_mtls_endpoint = "example.mtls.sandbox.googleapis.com"
+    non_googleapi = "api.example.com"
+
+    assert PublisherClient._get_default_mtls_endpoint(api_endpoint) == api_mtls_endpoint
+    assert (
+        PublisherClient._get_default_mtls_endpoint(api_mtls_endpoint)
+        == api_mtls_endpoint
+    )
+    assert (
+        PublisherClient._get_default_mtls_endpoint(sandbox_endpoint)
+        == sandbox_mtls_endpoint
+    )
+    assert (
+        PublisherClient._get_default_mtls_endpoint(sandbox_mtls_endpoint)
+        == sandbox_mtls_endpoint
+    )
+    assert PublisherClient._get_default_mtls_endpoint(non_googleapi) == non_googleapi
+
+
 def test_publisher_client_from_service_account_file():
     creds = credentials.AnonymousCredentials()
     with mock.patch.object(
