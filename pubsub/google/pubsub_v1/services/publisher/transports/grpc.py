@@ -72,6 +72,10 @@ class PublisherGrpcTransport(PublisherTransport):
                 callback to provide client SSL certificate bytes and private key
                 bytes, both in PEM format. It is ignored if ``api_mtls_endpoint``
                 is None.
+
+        Raises:
+            google.auth.exceptions.MutualTlsChannelError: If mutual TLS transport
+                creation failed for any reason.
         """
         if channel:
             credentials = False

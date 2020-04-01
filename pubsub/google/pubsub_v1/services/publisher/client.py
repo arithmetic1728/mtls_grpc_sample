@@ -155,6 +155,10 @@ class PublisherClient(metaclass=PublisherClientMeta):
                 transport will be created if client SSL credentials are found.
                 Client SSL credentials are obtained from ``client_cert_source``
                 or application default SSL credentials.
+
+        Raises:
+            google.auth.exceptions.MutualTlsChannelError: If mutual TLS transport
+                creation failed for any reason.
         """
         if isinstance(client_options, dict):
             client_options = ClientOptions.from_dict(client_options)
