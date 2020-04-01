@@ -1,3 +1,7 @@
 [submodule "google-auth-library-python"]
 	path = google-auth-library-python
 	url = https://github.com/googleapis/google-auth-library-python.git
+[submodule "python-api-core"]
+	path = python-api-core
+	url = https://github.com/googleapis/python-api-core.git
+	branch = sijun/cert
