@@ -1,7 +1,8 @@
 # mtls_grpc_sample
 
+Login with "sijunliu@contextaware.us".
 ```
-gcloud auth application-default login --scopes="https://www.googleapis.com/auth/pubsub"
+gcloud auth login
 gcloud config set project sijun-mtls-demo
 ```
 
@@ -16,10 +17,11 @@ pyenv virtualenv mtls_grpc_sample
 pyenv local mtls_grpc_sample
 ```
 
-Then go to `google-auth-library-python` and `pubsub` directories, install them
-locally with command
+Install the following in order.
 ```
-python -m pip install -e .
+ython -m pip install -e python-api-core
+python -m pip install -e google-auth-library-python
+python -m pip install -e pubsub
 ```
 
 Run the sample, `python grpc_sample.py`

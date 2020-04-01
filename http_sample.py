@@ -9,11 +9,8 @@ from google.oauth2 import credentials
 
 MTLS_ENDPOINT = "https://pubsub.mtls.googleapis.com/v1/projects/{}/topics"
 REGULAR_ENDPOINT = "https://pubsub.googleapis.com/v1/projects/{}/topics"
-
-_, project_id = google.auth.default()
+project_id = "sijun-mtls-demo"
 credentials = credentials.UserAccessTokenCredentials()
-print("project_id is: ")
-print(project_id)
 
 
 def use_requests():

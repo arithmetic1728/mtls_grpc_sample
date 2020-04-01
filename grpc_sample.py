@@ -4,10 +4,7 @@ import google.api_core.client_options as ClientOptions
 
 
 def call():
-    _, project_id = google.auth.default()
-
-    print("=========== project id ====")
-    print(project_id)
+    project_id = "sijun-mtls-demo"
 
     cred = google.oauth2.credentials.UserAccessTokenCredentials()
     client_options = ClientOptions.ClientOptions(
