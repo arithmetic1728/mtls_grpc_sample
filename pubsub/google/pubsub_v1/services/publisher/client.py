@@ -34,6 +34,10 @@ from .transports.base import PublisherTransport
 from .transports.grpc import PublisherGrpcTransport
 
 
+_DEFAULT_ENDPOINT = "pubsub.googleapis.com"
+_DEFAULT_MTLS_ENDPOINT = _get_default_mtls_endpoint(_DEFAULT_ENDPOINT)
+
+
 def _get_default_mtls_endpoint(api_endpoint):
     """Convert api endpoint to mTLS endpoint.
 
@@ -98,9 +102,7 @@ class PublisherClient(metaclass=PublisherClientMeta):
     and to send messages to a topic.
     """
 
-    DEFAULT_ENDPOINT = "pubsub.googleapis.com"
-    DEFAULT_OPTIONS = ClientOptions.ClientOptions(api_endpoint=DEFAULT_ENDPOINT)
-    DEFAULT_MTLS_ENDPOINT = _get_default_mtls_endpoint(DEFAULT_ENDPOINT)
+    DEFAULT_OPTIONS = ClientOptions.ClientOptions(api_endpoint=_DEFAULT_ENDPOINT)
 
     @classmethod
     def from_service_account_file(cls, filename: str, *args, **kwargs):
@@ -165,7 +167,7 @@ class PublisherClient(metaclass=PublisherClientMeta):
 
         # Set default api endpoint if not set.
         if client_options.api_endpoint is None:
-            client_options.api_endpoint = DEFAULT_ENDPOINT
+            client_options.api_endpoint = _DEFAULT_ENDPOINT
 
         # Save or instantiate the transport.
         # Ordinarily, we provide the transport, but allowing a custom transport
@@ -192,10 +194,10 @@ class PublisherClient(metaclass=PublisherClientMeta):
             # If the user overrides endpoint, use it as the mTLS endpoint. If the
             # user doesn't override endpoint, but provides client_cert_source,
             # use the default mTLS endpoint.
-            if client_options.api_endpoint != DEFAULT_ENDPOINT:
+            if client_options.api_endpoint != _DEFAULT_ENDPOINT:
                 api_mtls_endpoint = client_options.api_endpoint
             elif client_options.client_cert_source:
-                api_mtls_endpoint = DEFAULT_MTLS_ENDPOINT
+                api_mtls_endpoint = _DEFAULT_MTLS_ENDPOINT
 
             Transport = type(self).get_transport_class()
             self._transport = Transport(
