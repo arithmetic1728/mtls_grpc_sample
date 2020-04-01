@@ -9,10 +9,11 @@ def call():
     print("=========== project id ====")
     print(project_id)
 
-    cred = google.oauth2.credentials.UserAccessTokenCredentials() 
-    client = PublisherClient(
-        credentials=cred, api_mtls_endpoint="pubsub.mtls.googleapis.com"
+    cred = google.oauth2.credentials.UserAccessTokenCredentials()
+    client_options = ClientOptions.ClientOptions(
+        api_endpoint="pubsub.mtls.googleapis.com"
     )
+    client = PublisherClient(credentials=cred, client_options=client_options)
 
     project = "projects/{}".format(project_id)
     list_topics_iter = client.list_topics(project=project)
