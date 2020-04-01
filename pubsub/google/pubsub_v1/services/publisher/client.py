@@ -34,10 +34,6 @@ from .transports.base import PublisherTransport
 from .transports.grpc import PublisherGrpcTransport
 
 
-_DEFAULT_ENDPOINT = "pubsub.googleapis.com"
-_DEFAULT_MTLS_ENDPOINT = _get_default_mtls_endpoint(_DEFAULT_ENDPOINT)
-
-
 def _get_default_mtls_endpoint(api_endpoint):
     """Convert api endpoint to mTLS endpoint.
 
@@ -65,6 +61,10 @@ def _get_default_mtls_endpoint(api_endpoint):
         )
 
     return api_endpoint.replace(".googleapis.com", ".mtls.googleapis.com")
+
+
+_DEFAULT_ENDPOINT = "pubsub.googleapis.com"
+_DEFAULT_MTLS_ENDPOINT = _get_default_mtls_endpoint(_DEFAULT_ENDPOINT)
 
 
 class PublisherClientMeta(type):
