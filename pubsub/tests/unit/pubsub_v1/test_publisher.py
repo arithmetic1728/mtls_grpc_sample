@@ -29,6 +29,7 @@ from google.pubsub_v1 import enums
 from google.pubsub_v1.services.publisher import PublisherClient
 from google.pubsub_v1.services.publisher import pagers
 from google.pubsub_v1.services.publisher import transports
+from google.pubsub_v1.services.publisher.client import _get_default_mtls_endpoint
 from google.pubsub_v1.types import pubsub
 
 
@@ -39,20 +40,11 @@ def test__get_default_mtls_endpoint():
     sandbox_mtls_endpoint = "example.mtls.sandbox.googleapis.com"
     non_googleapi = "api.example.com"
 
-    assert PublisherClient._get_default_mtls_endpoint(api_endpoint) == api_mtls_endpoint
-    assert (
-        PublisherClient._get_default_mtls_endpoint(api_mtls_endpoint)
-        == api_mtls_endpoint
-    )
-    assert (
-        PublisherClient._get_default_mtls_endpoint(sandbox_endpoint)
-        == sandbox_mtls_endpoint
-    )
-    assert (
-        PublisherClient._get_default_mtls_endpoint(sandbox_mtls_endpoint)
-        == sandbox_mtls_endpoint
-    )
-    assert PublisherClient._get_default_mtls_endpoint(non_googleapi) == non_googleapi
+    assert _get_default_mtls_endpoint(api_endpoint) == api_mtls_endpoint
+    assert _get_default_mtls_endpoint(api_mtls_endpoint) == api_mtls_endpoint
+    assert _get_default_mtls_endpoint(sandbox_endpoint) == sandbox_mtls_endpoint
+    assert _get_default_mtls_endpoint(sandbox_mtls_endpoint) == sandbox_mtls_endpoint
+    assert _get_default_mtls_endpoint(non_googleapi) == non_googleapi
 
 
 def test_publisher_client_from_service_account_file():
@@ -67,7 +59,7 @@ def test_publisher_client_from_service_account_file():
         client = PublisherClient.from_service_account_json("dummy/file/path.json")
         assert client._transport._credentials == creds
 
-        assert client._transport._host == "pubsub.googleapis.com"
+        assert client._transport._host == "pubsub.googleapis.com:443"
 
 
 def test_publisher_client_client_options():
@@ -81,7 +73,12 @@ def test_publisher_client_client_options():
     ) as gtc:
         transport = gtc.return_value = mock.MagicMock()
         client = PublisherClient(client_options=options)
-        transport.assert_called_once_with(credentials=None, host="squid.clam.whelk")
+        transport.assert_called_once_with(
+            api_mtls_endpoint="squid.clam.whelk",
+            client_cert_source=None,
+            credentials=None,
+            host="squid.clam.whelk",
+        )
 
 
 def test_publisher_client_client_options_from_dict():
@@ -90,7 +87,12 @@ def test_publisher_client_client_options_from_dict():
     ) as gtc:
         transport = gtc.return_value = mock.MagicMock()
         client = PublisherClient(client_options={"api_endpoint": "squid.clam.whelk"})
-        transport.assert_called_once_with(credentials=None, host="squid.clam.whelk")
+        transport.assert_called_once_with(
+            api_mtls_endpoint="squid.clam.whelk",
+            client_cert_source=None,
+            credentials=None,
+            host="squid.clam.whelk",
+        )
 
 
 def test_create_topic(transport: str = "grpc"):
