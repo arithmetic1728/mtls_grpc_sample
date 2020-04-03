@@ -181,27 +181,30 @@ class PublisherClient(metaclass=PublisherClientMeta):
                     "provide its credentials directly."
                 )
             self._transport = transport
-        elif transport is not None:
-            # transport is a string representing the name.
+        elif transport is not None or (
+            client_options.api_endpoint == _DEFAULT_ENDPOINT
+            and client_options.client_cert_source is None
+        ):
+            # Don't trigger mTLS.
             Transport = type(self).get_transport_class(transport)
             self._transport = Transport(
                 credentials=credentials, host=client_options.api_endpoint
             )
         else:
-            # transport is None, we will create a transport instance.
-            # Figure out if mTLS channel should be created.
-            api_mtls_endpoint = None
+            # Trigger mTLS. If the user overrides endpoint, use it as the mTLS
+            # endpoint, otherwise use the default mTLS endpoint.
+            api_mtls_endpoint = (
+                (client_options.api_endpoint != _DEFAULT_ENDPOINT)
+                and client_options.api_endpoint
+                or _DEFAULT_MTLS_ENDPOINT
+            )
 
-            # If the user overrides endpoint, use it as the mTLS endpoint. If the
-            # user doesn't override endpoint, but provides client_cert_source,
-            # use the default mTLS endpoint.
             if client_options.api_endpoint != _DEFAULT_ENDPOINT:
                 api_mtls_endpoint = client_options.api_endpoint
             elif client_options.client_cert_source:
                 api_mtls_endpoint = _DEFAULT_MTLS_ENDPOINT
 
-            Transport = type(self).get_transport_class()
-            self._transport = Transport(
+            self._transport = PublisherGrpcTransport(
                 credentials=credentials,
                 host=client_options.api_endpoint,
                 api_mtls_endpoint=api_mtls_endpoint,

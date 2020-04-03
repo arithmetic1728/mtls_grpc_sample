@@ -93,21 +93,16 @@ def test_publisher_client_client_options():
     ) as gtc:
         transport = gtc.return_value = mock.MagicMock()
         client = PublisherClient(client_options=options)
-        transport.assert_called_once_with(
-            api_mtls_endpoint=None,
-            client_cert_source=None,
-            credentials=None,
-            host=_DEFAULT_ENDPOINT,
-        )
+        transport.assert_called_once_with(credentials=None, host=_DEFAULT_ENDPOINT)
 
     # Check api endpoint override.
     options = client_options.ClientOptions(api_endpoint="squid.clam.whelk")
     with mock.patch(
-        "google.pubsub_v1.services.publisher.PublisherClient.get_transport_class"
-    ) as gtc:
-        transport = gtc.return_value = mock.MagicMock()
+        "google.pubsub_v1.services.publisher.transports.PublisherGrpcTransport.__init__"
+    ) as grpc_transport:
+        grpc_transport.return_value = None
         client = PublisherClient(client_options=options)
-        transport.assert_called_once_with(
+        grpc_transport.assert_called_once_with(
             api_mtls_endpoint="squid.clam.whelk",
             client_cert_source=None,
             credentials=None,
@@ -119,11 +114,11 @@ def test_publisher_client_client_options():
         client_cert_source=client_cert_source_callback
     )
     with mock.patch(
-        "google.pubsub_v1.services.publisher.PublisherClient.get_transport_class"
-    ) as gtc:
-        transport = gtc.return_value = mock.MagicMock()
+        "google.pubsub_v1.services.publisher.transports.PublisherGrpcTransport.__init__"
+    ) as grpc_transport:
+        grpc_transport.return_value = None
         client = PublisherClient(client_options=options)
-        transport.assert_called_once_with(
+        grpc_transport.assert_called_once_with(
             api_mtls_endpoint=_DEFAULT_MTLS_ENDPOINT,
             client_cert_source=client_cert_source_callback,
             credentials=None,
@@ -133,11 +128,11 @@ def test_publisher_client_client_options():
 
 def test_publisher_client_client_options_from_dict():
     with mock.patch(
-        "google.pubsub_v1.services.publisher.PublisherClient.get_transport_class"
-    ) as gtc:
-        transport = gtc.return_value = mock.MagicMock()
+        "google.pubsub_v1.services.publisher.transports.PublisherGrpcTransport.__init__"
+    ) as grpc_transport:
+        grpc_transport.return_value = None
         client = PublisherClient(client_options={"api_endpoint": "squid.clam.whelk"})
-        transport.assert_called_once_with(
+        grpc_transport.assert_called_once_with(
             api_mtls_endpoint="squid.clam.whelk",
             client_cert_source=None,
             credentials=None,
