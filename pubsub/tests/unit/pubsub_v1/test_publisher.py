@@ -32,6 +32,8 @@ from google.pubsub_v1.services.publisher import PublisherClient
 from google.pubsub_v1.services.publisher import pagers
 from google.pubsub_v1.services.publisher import transports
 from google.pubsub_v1.services.publisher.client import _get_default_mtls_endpoint
+from google.pubsub_v1.services.publisher.client import _DEFAULT_ENDPOINT
+from google.pubsub_v1.services.publisher.client import _DEFAULT_MTLS_ENDPOINT
 from google.pubsub_v1.types import pubsub
 
 
@@ -72,6 +74,7 @@ def test_publisher_client_from_service_account_file():
 def test_publisher_client_client_options():
     # Check the default options have their expected values.
     assert PublisherClient.DEFAULT_OPTIONS.api_endpoint == "pubsub.googleapis.com"
+    assert PublisherClient.DEFAULT_OPTIONS.api_endpoint == _DEFAULT_ENDPOINT
 
     # Check that the given channel is used.
     with mock.patch(
@@ -94,7 +97,7 @@ def test_publisher_client_client_options():
             api_mtls_endpoint=None,
             client_cert_source=None,
             credentials=None,
-            host="pubsub.googleapis.com",
+            host=_DEFAULT_ENDPOINT,
         )
 
     # Check api endpoint override.
@@ -121,10 +124,10 @@ def test_publisher_client_client_options():
         transport = gtc.return_value = mock.MagicMock()
         client = PublisherClient(client_options=options)
         transport.assert_called_once_with(
-            api_mtls_endpoint=_get_default_mtls_endpoint("pubsub.googleapis.com"),
+            api_mtls_endpoint=_DEFAULT_MTLS_ENDPOINT,
             client_cert_source=client_cert_source_callback,
             credentials=None,
-            host="pubsub.googleapis.com",
+            host=_DEFAULT_ENDPOINT,
         )
 
 
