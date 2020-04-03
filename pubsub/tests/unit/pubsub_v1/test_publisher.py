@@ -23,7 +23,9 @@ import pytest
 
 from google import auth
 from google.api_core import client_options
+from google.api_core import grpc_helpers
 from google.auth import credentials
+from google.auth.transport.grpc import SslCredentials
 from google.oauth2 import service_account
 from google.pubsub_v1 import enums
 from google.pubsub_v1.services.publisher import PublisherClient
@@ -31,6 +33,10 @@ from google.pubsub_v1.services.publisher import pagers
 from google.pubsub_v1.services.publisher import transports
 from google.pubsub_v1.services.publisher.client import _get_default_mtls_endpoint
 from google.pubsub_v1.types import pubsub
+
+
+def client_cert_source_callback():
+    return b"cert bytes", b"key bytes"
 
 
 def test__get_default_mtls_endpoint():
@@ -66,7 +72,31 @@ def test_publisher_client_client_options():
     # Check the default options have their expected values.
     assert PublisherClient.DEFAULT_OPTIONS.api_endpoint == "pubsub.googleapis.com"
 
-    # Check that options can be customized.
+    # Check that the given channel is used.
+    with mock.patch(
+        "google.pubsub_v1.services.publisher.PublisherClient.get_transport_class"
+    ) as gtc:
+        transport = transports.PublisherGrpcTransport(
+            credentials=credentials.AnonymousCredentials()
+        )
+        client = PublisherClient(transport=transport)
+        gtc.assert_not_called()
+
+    # Check empty client options.
+    options = client_options.ClientOptions()
+    with mock.patch(
+        "google.pubsub_v1.services.publisher.PublisherClient.get_transport_class"
+    ) as gtc:
+        transport = gtc.return_value = mock.MagicMock()
+        client = PublisherClient(client_options=options)
+        transport.assert_called_once_with(
+            api_mtls_endpoint=None,
+            client_cert_source=None,
+            credentials=None,
+            host="pubsub.googleapis.com",
+        )
+
+    # Check api endpoint override.
     options = client_options.ClientOptions(api_endpoint="squid.clam.whelk")
     with mock.patch(
         "google.pubsub_v1.services.publisher.PublisherClient.get_transport_class"
@@ -78,6 +108,22 @@ def test_publisher_client_client_options():
             client_cert_source=None,
             credentials=None,
             host="squid.clam.whelk",
+        )
+
+    # Check client_cert_source is used.
+    options = client_options.ClientOptions(
+        client_cert_source=client_cert_source_callback
+    )
+    with mock.patch(
+        "google.pubsub_v1.services.publisher.PublisherClient.get_transport_class"
+    ) as gtc:
+        transport = gtc.return_value = mock.MagicMock()
+        client = PublisherClient(client_options=options)
+        transport.assert_called_once_with(
+            api_mtls_endpoint=_get_default_mtls_endpoint("pubsub.googleapis.com"),
+            client_cert_source=client_cert_source_callback,
+            credentials=None,
+            host="pubsub.googleapis.com",
         )
 
 
@@ -763,8 +809,88 @@ def test_publisher_host_with_port():
 
 def test_publisher_grpc_transport_channel():
     channel = grpc.insecure_channel("http://localhost/")
-    transport = transports.PublisherGrpcTransport(channel=channel)
-    assert transport.grpc_channel is channel
+
+    # Check that if channel is provided, mtls endpoint and client_cert_source
+    # won't be used.
+    callback = mock.MagicMock()
+    transport = transports.PublisherGrpcTransport(
+        host="squid.clam.whelk",
+        channel=channel,
+        api_mtls_endpoint="mtls.squid.clam.whelk",
+        client_cert_source=callback,
+    )
+    assert transport.grpc_channel == channel
+    assert transport._host == "squid.clam.whelk:443"
+    assert not callback.called
+
+
+@mock.patch("grpc.ssl_channel_credentials", autospec=True)
+@mock.patch("google.api_core.grpc_helpers.create_channel", autospec=True)
+def test_publisher_grpc_transport_channel_mtls_with_client_cert_source(
+    grpc_create_channel, grpc_ssl_channel_cred
+):
+    # Check that if channel is None, but api_mtls_endpoint and client_cert_source
+    # are provided, then a mTLS channel will be created.
+    mock_cred = mock.Mock()
+
+    mock_ssl_cred = mock.Mock()
+    grpc_ssl_channel_cred.return_value = mock_ssl_cred
+
+    mock_grpc_channel = mock.Mock()
+    grpc_create_channel.return_value = mock_grpc_channel
+
+    transport = transports.PublisherGrpcTransport(
+        host="squid.clam.whelk",
+        credentials=mock_cred,
+        api_mtls_endpoint="mtls.squid.clam.whelk",
+        client_cert_source=client_cert_source_callback,
+    )
+    grpc_ssl_channel_cred.assert_called_once_with(
+        certificate_chain=b"cert bytes", private_key=b"key bytes"
+    )
+    grpc_create_channel.assert_called_once_with(
+        "mtls.squid.clam.whelk:443",
+        credentials=mock_cred,
+        ssl_credentials=mock_ssl_cred,
+        scopes=(
+            "https://www.googleapis.com/auth/cloud-platform",
+            "https://www.googleapis.com/auth/pubsub",
+        ),
+    )
+    assert transport.grpc_channel == mock_grpc_channel
+
+
+@mock.patch("google.api_core.grpc_helpers.create_channel", autospec=True)
+def test_publisher_grpc_transport_channel_mtls_with_adc(grpc_create_channel):
+    # Check that if channel and client_cert_source are None, but api_mtls_endpoint
+    # is provided, then a mTLS channel will be created with SSL ADC.
+    mock_grpc_channel = mock.Mock()
+    grpc_create_channel.return_value = mock_grpc_channel
+
+    # Mock google.auth.transport.grpc.SslCredentials class.
+    mock_ssl_cred = mock.Mock()
+    with mock.patch.multiple(
+        "google.auth.transport.grpc.SslCredentials",
+        __init__=mock.Mock(return_value=None),
+        ssl_credentials=mock.PropertyMock(return_value=mock_ssl_cred),
+    ):
+        mock_cred = mock.Mock()
+        transport = transports.PublisherGrpcTransport(
+            host="squid.clam.whelk",
+            credentials=mock_cred,
+            api_mtls_endpoint="mtls.squid.clam.whelk",
+            client_cert_source=None,
+        )
+        grpc_create_channel.assert_called_once_with(
+            "mtls.squid.clam.whelk:443",
+            credentials=mock_cred,
+            ssl_credentials=mock_ssl_cred,
+            scopes=(
+                "https://www.googleapis.com/auth/cloud-platform",
+                "https://www.googleapis.com/auth/pubsub",
+            ),
+        )
+        assert transport.grpc_channel == mock_grpc_channel
 
 
 def test_topic_path():
