@@ -41,13 +41,14 @@ def _get_default_mtls_endpoint(api_endpoint):
     "*.mtls.sandbox.googleapis.com" and "*.mtls.googleapis.com" respectively.
 
     Args:
-        api_endpoint (str): the api endpoint to convert.
+        api_endpoint (Optional[str]): the api endpoint to convert.
 
     Returns:
         str: converted mTLS api endpoint.
     """
     if (
-        api_endpoint.find("mtls.sandbox.googleapis.com") != -1
+        api_endpoint is None
+        or api_endpoint.find("mtls.sandbox.googleapis.com") != -1
         or api_endpoint.find("mtls.googleapis.com") != -1
         or api_endpoint.find(".googleapis.com") == -1
     ):
