@@ -193,10 +193,12 @@ class PublisherClient(metaclass=PublisherClientMeta):
         else:
             # Trigger mTLS. If the user overrides endpoint, use it as the mTLS
             # endpoint, otherwise use the default mTLS endpoint.
-            if client_options.api_endpoint != self.DEFAULT_ENDPOINT:
-                api_mtls_endpoint = client_options.api_endpoint
-            else:
-                api_mtls_endpoint = self.DEFAULT_MTLS_ENDPOINT
+            option_endpoint = client_options.api_endpoint
+            api_mtls_endpoint = (
+                self.DEFAULT_MTLS_ENDPOINT
+                if option_endpoint == self.DEFAULT_ENDPOINT
+                else option_endpoint
+            )
 
             self._transport = PublisherGrpcTransport(
                 credentials=credentials,
