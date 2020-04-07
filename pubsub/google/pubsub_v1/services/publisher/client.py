@@ -16,6 +16,7 @@
 #
 
 from collections import OrderedDict
+import re
 from typing import Callable, Dict, Iterable, Iterator, Sequence, Tuple, Type, Union
 import pkg_resources
 
@@ -32,40 +33,6 @@ from google.pubsub_v1.types import pubsub
 
 from .transports.base import PublisherTransport
 from .transports.grpc import PublisherGrpcTransport
-
-
-def _get_default_mtls_endpoint(api_endpoint):
-    """Convert api endpoint to mTLS endpoint.
-
-    Convert "*.sandbox.googleapis.com" and "*.googleapis.com" to
-    "*.mtls.sandbox.googleapis.com" and "*.mtls.googleapis.com" respectively.
-
-    Args:
-        api_endpoint (Optional[str]): the api endpoint to convert.
-
-    Returns:
-        str: converted mTLS api endpoint.
-    """
-    if (
-        api_endpoint is None
-        or api_endpoint.find("mtls.sandbox.googleapis.com") != -1
-        or api_endpoint.find("mtls.googleapis.com") != -1
-        or api_endpoint.find(".googleapis.com") == -1
-    ):
-        # If the endpoint is already mTLS or the endpoint is not a googleapi,
-        # there is no need to convert.
-        return api_endpoint
-
-    if api_endpoint.find(".sandbox.googleapis.com") != -1:
-        return api_endpoint.replace(
-            ".sandbox.googleapis.com", ".mtls.sandbox.googleapis.com"
-        )
-
-    return api_endpoint.replace(".googleapis.com", ".mtls.googleapis.com")
-
-
-_DEFAULT_ENDPOINT = "pubsub.googleapis.com"
-_DEFAULT_MTLS_ENDPOINT = _get_default_mtls_endpoint(_DEFAULT_ENDPOINT)
 
 
 class PublisherClientMeta(type):
@@ -103,7 +70,40 @@ class PublisherClient(metaclass=PublisherClientMeta):
     and to send messages to a topic.
     """
 
-    DEFAULT_OPTIONS = ClientOptions.ClientOptions(api_endpoint=_DEFAULT_ENDPOINT)
+    @staticmethod
+    def _get_default_mtls_endpoint(api_endpoint):
+        """Convert api endpoint to mTLS endpoint.
+        Convert "*.sandbox.googleapis.com" and "*.googleapis.com" to
+        "*.mtls.sandbox.googleapis.com" and "*.mtls.googleapis.com" respectively.
+        Args:
+            api_endpoint (Optional[str]): the api endpoint to convert.
+        Returns:
+            str: converted mTLS api endpoint.
+        """
+        if not api_endpoint:
+            return api_endpoint
+
+        mtls_endpoint_re = re.compile(
+            r"(?P<name>[^.]+)(?P<mtls>\.mtls)?(?P<sandbox>\.sandbox)?(?P<googledomain>\.googleapis\.com)?"
+        )
+
+        m = mtls_endpoint_re.match(api_endpoint)
+        name, mtls, sandbox, googledomain = m.groups()
+        if mtls or not googledomain:
+            return api_endpoint
+
+        if sandbox:
+            return api_endpoint.replace(
+                "sandbox.googleapis.com", "mtls.sandbox.googleapis.com"
+            )
+
+        return api_endpoint.replace(".googleapis.com", ".mtls.googleapis.com")
+
+    DEFAULT_ENDPOINT = "pubsub.googleapis.com"
+    DEFAULT_MTLS_ENDPOINT = _get_default_mtls_endpoint.__func__(  # type: ignore
+        DEFAULT_ENDPOINT
+    )
+    DEFAULT_OPTIONS = ClientOptions.ClientOptions(api_endpoint=DEFAULT_ENDPOINT)
 
     @classmethod
     def from_service_account_file(cls, filename: str, *args, **kwargs):
@@ -168,7 +168,7 @@ class PublisherClient(metaclass=PublisherClientMeta):
 
         # Set default api endpoint if not set.
         if client_options.api_endpoint is None:
-            client_options.api_endpoint = _DEFAULT_ENDPOINT
+            client_options.api_endpoint = PublisherClient.DEFAULT_ENDPOINT
 
         # Save or instantiate the transport.
         # Ordinarily, we provide the transport, but allowing a custom transport
@@ -182,7 +182,7 @@ class PublisherClient(metaclass=PublisherClientMeta):
                 )
             self._transport = transport
         elif transport is not None or (
-            client_options.api_endpoint == _DEFAULT_ENDPOINT
+            client_options.api_endpoint == PublisherClient.DEFAULT_ENDPOINT
             and client_options.client_cert_source is None
         ):
             # Don't trigger mTLS.
@@ -193,16 +193,10 @@ class PublisherClient(metaclass=PublisherClientMeta):
         else:
             # Trigger mTLS. If the user overrides endpoint, use it as the mTLS
             # endpoint, otherwise use the default mTLS endpoint.
-            api_mtls_endpoint = (
-                (client_options.api_endpoint != _DEFAULT_ENDPOINT)
-                and client_options.api_endpoint
-                or _DEFAULT_MTLS_ENDPOINT
-            )
-
-            if client_options.api_endpoint != _DEFAULT_ENDPOINT:
+            if client_options.api_endpoint != PublisherClient.DEFAULT_ENDPOINT:
                 api_mtls_endpoint = client_options.api_endpoint
-            elif client_options.client_cert_source:
-                api_mtls_endpoint = _DEFAULT_MTLS_ENDPOINT
+            else:
+                api_mtls_endpoint = PublisherClient.DEFAULT_MTLS_ENDPOINT
 
             self._transport = PublisherGrpcTransport(
                 credentials=credentials,

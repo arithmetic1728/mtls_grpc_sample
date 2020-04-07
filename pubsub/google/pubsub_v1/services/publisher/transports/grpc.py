@@ -81,11 +81,10 @@ class PublisherGrpcTransport(PublisherTransport):
             credentials = False
             self._grpc_channel = channel
         elif api_mtls_endpoint:
-            host = (
-                (":" in api_mtls_endpoint)
-                and api_mtls_endpoint
-                or (api_mtls_endpoint + ":443")
-            )
+            if ":" in api_mtls_endpoint:
+                host = api_mtls_endpoint
+            else:
+                host = api_mtls_endpoint + ":443"
 
             # Create SSL credentials with client_cert_source or application
             # default SSL credentials.

@@ -31,9 +31,6 @@ from google.pubsub_v1 import enums
 from google.pubsub_v1.services.publisher import PublisherClient
 from google.pubsub_v1.services.publisher import pagers
 from google.pubsub_v1.services.publisher import transports
-from google.pubsub_v1.services.publisher.client import _get_default_mtls_endpoint
-from google.pubsub_v1.services.publisher.client import _DEFAULT_ENDPOINT
-from google.pubsub_v1.services.publisher.client import _DEFAULT_MTLS_ENDPOINT
 from google.pubsub_v1.types import pubsub
 
 
@@ -48,12 +45,21 @@ def test__get_default_mtls_endpoint():
     sandbox_mtls_endpoint = "example.mtls.sandbox.googleapis.com"
     non_googleapi = "api.example.com"
 
-    assert _get_default_mtls_endpoint(None) == None
-    assert _get_default_mtls_endpoint(api_endpoint) == api_mtls_endpoint
-    assert _get_default_mtls_endpoint(api_mtls_endpoint) == api_mtls_endpoint
-    assert _get_default_mtls_endpoint(sandbox_endpoint) == sandbox_mtls_endpoint
-    assert _get_default_mtls_endpoint(sandbox_mtls_endpoint) == sandbox_mtls_endpoint
-    assert _get_default_mtls_endpoint(non_googleapi) == non_googleapi
+    assert PublisherClient._get_default_mtls_endpoint(None) == None
+    assert PublisherClient._get_default_mtls_endpoint(api_endpoint) == api_mtls_endpoint
+    assert (
+        PublisherClient._get_default_mtls_endpoint(api_mtls_endpoint)
+        == api_mtls_endpoint
+    )
+    assert (
+        PublisherClient._get_default_mtls_endpoint(sandbox_endpoint)
+        == sandbox_mtls_endpoint
+    )
+    assert (
+        PublisherClient._get_default_mtls_endpoint(sandbox_mtls_endpoint)
+        == sandbox_mtls_endpoint
+    )
+    assert PublisherClient._get_default_mtls_endpoint(non_googleapi) == non_googleapi
 
 
 def test_publisher_client_from_service_account_file():
@@ -74,7 +80,9 @@ def test_publisher_client_from_service_account_file():
 def test_publisher_client_client_options():
     # Check the default options have their expected values.
     assert PublisherClient.DEFAULT_OPTIONS.api_endpoint == "pubsub.googleapis.com"
-    assert PublisherClient.DEFAULT_OPTIONS.api_endpoint == _DEFAULT_ENDPOINT
+    assert (
+        PublisherClient.DEFAULT_OPTIONS.api_endpoint == PublisherClient.DEFAULT_ENDPOINT
+    )
 
     # Check that the given channel is used.
     with mock.patch(
@@ -93,7 +101,9 @@ def test_publisher_client_client_options():
     ) as gtc:
         transport = gtc.return_value = mock.MagicMock()
         client = PublisherClient(client_options=options)
-        transport.assert_called_once_with(credentials=None, host=_DEFAULT_ENDPOINT)
+        transport.assert_called_once_with(
+            credentials=None, host=PublisherClient.DEFAULT_ENDPOINT
+        )
 
     # Check api endpoint override.
     options = client_options.ClientOptions(api_endpoint="squid.clam.whelk")
@@ -119,10 +129,10 @@ def test_publisher_client_client_options():
         grpc_transport.return_value = None
         client = PublisherClient(client_options=options)
         grpc_transport.assert_called_once_with(
-            api_mtls_endpoint=_DEFAULT_MTLS_ENDPOINT,
+            api_mtls_endpoint=PublisherClient.DEFAULT_MTLS_ENDPOINT,
             client_cert_source=client_cert_source_callback,
             credentials=None,
-            host=_DEFAULT_ENDPOINT,
+            host=PublisherClient.DEFAULT_ENDPOINT,
         )
 
 
@@ -859,8 +869,13 @@ def test_publisher_grpc_transport_channel_mtls_with_client_cert_source(
     assert transport.grpc_channel == mock_grpc_channel
 
 
+@pytest.mark.parametrize(
+    "api_mtls_endpoint", ["mtls.squid.clam.whelk", "mtls.squid.clam.whelk:443"]
+)
 @mock.patch("google.api_core.grpc_helpers.create_channel", autospec=True)
-def test_publisher_grpc_transport_channel_mtls_with_adc(grpc_create_channel):
+def test_publisher_grpc_transport_channel_mtls_with_adc(
+    grpc_create_channel, api_mtls_endpoint
+):
     # Check that if channel and client_cert_source are None, but api_mtls_endpoint
     # is provided, then a mTLS channel will be created with SSL ADC.
     mock_grpc_channel = mock.Mock()
@@ -877,7 +892,7 @@ def test_publisher_grpc_transport_channel_mtls_with_adc(grpc_create_channel):
         transport = transports.PublisherGrpcTransport(
             host="squid.clam.whelk",
             credentials=mock_cred,
-            api_mtls_endpoint="mtls.squid.clam.whelk",
+            api_mtls_endpoint=api_mtls_endpoint,
             client_cert_source=None,
         )
         grpc_create_channel.assert_called_once_with(
