@@ -102,7 +102,7 @@ def test_publisher_client_client_options():
         transport = gtc.return_value = mock.MagicMock()
         client = PublisherClient(client_options=options)
         transport.assert_called_once_with(
-            credentials=None, host=PublisherClient.DEFAULT_ENDPOINT
+            credentials=None, host=client.DEFAULT_ENDPOINT
         )
 
     # Check api endpoint override.
@@ -129,10 +129,10 @@ def test_publisher_client_client_options():
         grpc_transport.return_value = None
         client = PublisherClient(client_options=options)
         grpc_transport.assert_called_once_with(
-            api_mtls_endpoint=PublisherClient.DEFAULT_MTLS_ENDPOINT,
+            api_mtls_endpoint=client.DEFAULT_MTLS_ENDPOINT,
             client_cert_source=client_cert_source_callback,
             credentials=None,
-            host=PublisherClient.DEFAULT_ENDPOINT,
+            host=client.DEFAULT_ENDPOINT,
         )
 
 

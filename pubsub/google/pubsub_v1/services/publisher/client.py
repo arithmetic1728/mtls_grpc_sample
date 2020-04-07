@@ -168,7 +168,7 @@ class PublisherClient(metaclass=PublisherClientMeta):
 
         # Set default api endpoint if not set.
         if client_options.api_endpoint is None:
-            client_options.api_endpoint = PublisherClient.DEFAULT_ENDPOINT
+            client_options.api_endpoint = self.DEFAULT_ENDPOINT
 
         # Save or instantiate the transport.
         # Ordinarily, we provide the transport, but allowing a custom transport
@@ -182,7 +182,7 @@ class PublisherClient(metaclass=PublisherClientMeta):
                 )
             self._transport = transport
         elif transport is not None or (
-            client_options.api_endpoint == PublisherClient.DEFAULT_ENDPOINT
+            client_options.api_endpoint == self.DEFAULT_ENDPOINT
             and client_options.client_cert_source is None
         ):
             # Don't trigger mTLS.
@@ -193,10 +193,10 @@ class PublisherClient(metaclass=PublisherClientMeta):
         else:
             # Trigger mTLS. If the user overrides endpoint, use it as the mTLS
             # endpoint, otherwise use the default mTLS endpoint.
-            if client_options.api_endpoint != PublisherClient.DEFAULT_ENDPOINT:
+            if client_options.api_endpoint != self.DEFAULT_ENDPOINT:
                 api_mtls_endpoint = client_options.api_endpoint
             else:
-                api_mtls_endpoint = PublisherClient.DEFAULT_MTLS_ENDPOINT
+                api_mtls_endpoint = self.DEFAULT_MTLS_ENDPOINT
 
             self._transport = PublisherGrpcTransport(
                 credentials=credentials,
