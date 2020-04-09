@@ -78,12 +78,6 @@ def test_publisher_client_from_service_account_file():
 
 
 def test_publisher_client_client_options():
-    # Check the default options have their expected values.
-    assert PublisherClient.DEFAULT_OPTIONS.api_endpoint == "pubsub.googleapis.com"
-    assert (
-        PublisherClient.DEFAULT_OPTIONS.api_endpoint == PublisherClient.DEFAULT_ENDPOINT
-    )
-
     # Check that the given channel is used.
     with mock.patch(
         "google.pubsub_v1.services.publisher.PublisherClient.get_transport_class"

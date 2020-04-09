@@ -103,7 +103,6 @@ class PublisherClient(metaclass=PublisherClientMeta):
     DEFAULT_MTLS_ENDPOINT = _get_default_mtls_endpoint.__func__(  # type: ignore
         DEFAULT_ENDPOINT
     )
-    DEFAULT_OPTIONS = ClientOptions.ClientOptions(api_endpoint=DEFAULT_ENDPOINT)
 
     @classmethod
     def from_service_account_file(cls, filename: str, *args, **kwargs):
@@ -135,7 +134,7 @@ class PublisherClient(metaclass=PublisherClientMeta):
         *,
         credentials: credentials.Credentials = None,
         transport: Union[str, PublisherTransport] = None,
-        client_options: ClientOptions = DEFAULT_OPTIONS,
+        client_options: ClientOptions = None,
     ) -> None:
         """Instantiate the publisher client.
 
@@ -153,11 +152,10 @@ class PublisherClient(metaclass=PublisherClientMeta):
                 default endpoint provided by the client.
                 (2) If ``transport`` argument is None, ``client_options`` can be
                 used to create a mutual TLS transport. If ``api_endpoint`` is
-                provided and different from the default endpoint, or the
-                ``client_cert_source`` property is provided,  mutual TLS
-                transport will be created if client SSL credentials are found.
-                Client SSL credentials are obtained from ``client_cert_source``
-                or application default SSL credentials.
+                provided or the ``client_cert_source`` property is provided,
+                mutual TLS transport will be created if client SSL credentials
+                are found. Client SSL credentials are obtained from
+                ``client_cert_source`` or application default SSL credentials.
 
         Raises:
             google.auth.exceptions.MutualTlsChannelError: If mutual TLS transport
@@ -165,10 +163,6 @@ class PublisherClient(metaclass=PublisherClientMeta):
         """
         if isinstance(client_options, dict):
             client_options = ClientOptions.from_dict(client_options)
-
-        # Set default api endpoint if not set.
-        if client_options.api_endpoint is None:
-            client_options.api_endpoint = self.DEFAULT_ENDPOINT
 
         # Save or instantiate the transport.
         # Ordinarily, we provide the transport, but allowing a custom transport
@@ -181,28 +175,27 @@ class PublisherClient(metaclass=PublisherClientMeta):
                     "provide its credentials directly."
                 )
             self._transport = transport
-        elif transport is not None or (
-            client_options.api_endpoint == self.DEFAULT_ENDPOINT
+        elif client_options is None or (
+            client_options.api_endpoint == None
             and client_options.client_cert_source is None
         ):
-            # Don't trigger mTLS.
+            # Don't trigger mTLS if we get an empty ClientOptions.
             Transport = type(self).get_transport_class(transport)
             self._transport = Transport(
-                credentials=credentials, host=client_options.api_endpoint
+                credentials=credentials, host=self.DEFAULT_ENDPOINT
             )
         else:
-            # Trigger mTLS. If the user overrides endpoint, use it as the mTLS
-            # endpoint, otherwise use the default mTLS endpoint.
-            option_endpoint = client_options.api_endpoint
-            api_mtls_endpoint = (
-                self.DEFAULT_MTLS_ENDPOINT
-                if option_endpoint == self.DEFAULT_ENDPOINT
-                else option_endpoint
-            )
+            # We have a non-empty ClientOptions. Trigger mTLS. If the user
+            # doesn't provide endpoint, use the default mTLS endpoint.
+            if client_options.api_endpoint:
+                api_endpoint = api_mtls_endpoint = client_options.api_endpoint
+            else:
+                api_endpoint = self.DEFAULT_ENDPOINT
+                api_mtls_endpoint = self.DEFAULT_MTLS_ENDPOINT
 
             self._transport = PublisherGrpcTransport(
                 credentials=credentials,
-                host=client_options.api_endpoint,
+                host=api_endpoint,
                 api_mtls_endpoint=api_mtls_endpoint,
                 client_cert_source=client_options.client_cert_source,
             )
