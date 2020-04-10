@@ -3,6 +3,7 @@ from os import path
 
 import google.auth
 import google.auth.credentials
+from google.auth.transport import mtls
 import google.auth.transport.requests
 import google.auth.transport.urllib3
 from google.oauth2 import credentials
@@ -16,7 +17,14 @@ credentials = credentials.UserAccessTokenCredentials()
 def use_requests():
     print("\n\n====== Test http call with requests lib =====\n")
     authed_session = google.auth.transport.requests.AuthorizedSession(credentials)
-    authed_session.configure_mtls_channel()
+
+    if mtls.has_default_client_cert_source():
+        print("= has default client cert source=")
+        callback = mtls.default_client_cert_source()
+    else:
+        callback = None
+
+    authed_session.configure_mtls_channel(client_cert_callback=callback)
 
     if authed_session.is_mtls:
         print("= using mtls channel=")
@@ -31,7 +39,14 @@ def use_requests():
 def use_urllib3():
     print("\n\n====== Test http call with urllib3 lib =====\n")
     authed_http = google.auth.transport.urllib3.AuthorizedHttp(credentials)
-    is_mtls = authed_http.configure_mtls_channel()
+
+    if mtls.has_default_client_cert_source():
+        print("= has default client cert source=")
+        callback = mtls.default_client_cert_source()
+    else:
+        callback = None
+
+    is_mtls = authed_http.configure_mtls_channel(client_cert_callback=callback)
 
     if is_mtls:
         print("= using mtls channel=")
