@@ -99,7 +99,8 @@ def test_publisher_client_client_options():
             credentials=None, host=client.DEFAULT_ENDPOINT
         )
 
-    # Check api endpoint override.
+    # Check mTLS is not triggered if api_endpoint is provided but
+    # client_cert_source is None.
     options = client_options.ClientOptions(api_endpoint="squid.clam.whelk")
     with mock.patch(
         "google.pubsub_v1.services.publisher.transports.PublisherGrpcTransport.__init__"
@@ -127,6 +128,22 @@ def test_publisher_client_client_options():
             client_cert_source=client_cert_source_callback,
             credentials=None,
             host=client.DEFAULT_ENDPOINT,
+        )
+
+    # Check mTLS is triggered if api_endpoint and client_cert_source are provided.
+    options = client_options.ClientOptions(
+        api_endpoint="squid.clam.whelk", client_cert_source=client_cert_source_callback
+    )
+    with mock.patch(
+        "google.pubsub_v1.services.publisher.transports.PublisherGrpcTransport.__init__"
+    ) as grpc_transport:
+        grpc_transport.return_value = None
+        client = PublisherClient(client_options=options)
+        grpc_transport.assert_called_once_with(
+            api_mtls_endpoint="squid.clam.whelk",
+            client_cert_source=client_cert_source_callback,
+            credentials=None,
+            host="squid.clam.whelk",
         )
 
 
