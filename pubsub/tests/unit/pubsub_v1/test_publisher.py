@@ -107,7 +107,7 @@ def test_publisher_client_client_options():
         grpc_transport.return_value = None
         client = PublisherClient(client_options=options)
         grpc_transport.assert_called_once_with(
-            api_mtls_endpoint="squid.clam.whelk",
+            api_mtls_endpoint=None,
             client_cert_source=None,
             credentials=None,
             host="squid.clam.whelk",
@@ -137,7 +137,7 @@ def test_publisher_client_client_options_from_dict():
         grpc_transport.return_value = None
         client = PublisherClient(client_options={"api_endpoint": "squid.clam.whelk"})
         grpc_transport.assert_called_once_with(
-            api_mtls_endpoint="squid.clam.whelk",
+            api_mtls_endpoint=None,
             client_cert_source=None,
             credentials=None,
             host="squid.clam.whelk",
