@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2019  Google LLC
+# Copyright 2020 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,23 +26,23 @@ setuptools.setup(
     platforms='Posix; MacOS X; Windows',
     include_package_data=True,
     install_requires=(
-        'google-api-core >= 1.8.0, < 2.0.0dev',
+        'google-auth >= 1.14.0',
+        'google-api-core >= 1.17.0, < 2.0.0dev',
         'googleapis-common-protos >= 1.5.8',
         'grpcio >= 1.10.0',
         'proto-plus >= 0.4.0',
     ),
+    python_requires='>=3.6',
     setup_requires=[
         'libcst >= 0.2.5',
     ],
     scripts=[
-        'scripts/fixup_publisher_keywords.py',
-        'scripts/fixup_subscriber_keywords.py',
-        ],
+        'scripts/fixup_keywords.py',
+    ],
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'Operating System :: OS Independent',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
