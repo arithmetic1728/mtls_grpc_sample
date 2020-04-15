@@ -16,7 +16,7 @@ def call():
         callback = None
 
     client_options = ClientOptions.ClientOptions(
-        api_endpoint="pubsub.mtls.googleapis.com", client_cert_source=callback
+        client_cert_source=callback
     )
     client = PublisherClient(credentials=cred, client_options=client_options)
 

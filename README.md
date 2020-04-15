@@ -8,7 +8,7 @@ gcloud config set project sijun-mtls-demo
 
 Download the repo:
 ```
-git clone --recursive https://github.com/arithmetic1728/mtls_grpc_sample.git
+git clone https://github.com/arithmetic1728/mtls_grpc_sample.git
 ```
 
 Create a virtual environment:
@@ -19,8 +19,6 @@ pyenv local mtls_grpc_sample
 
 Install the following in order.
 ```
-ython -m pip install -e python-api-core
-python -m pip install -e google-auth-library-python
 python -m pip install -e pubsub
 ```
 
