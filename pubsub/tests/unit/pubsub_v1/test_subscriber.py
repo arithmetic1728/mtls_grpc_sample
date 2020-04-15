@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2019  Google LLC
+# Copyright 2020 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,18 +18,40 @@
 from unittest import mock
 
 import grpc
-
+import math
 import pytest
 
 from google import auth
 from google.api_core import client_options
+from google.api_core import grpc_helpers
 from google.auth import credentials
 from google.oauth2 import service_account
-from google.pubsub_v1 import enums
+from google.protobuf import duration_pb2 as duration  # type: ignore
+from google.protobuf import field_mask_pb2 as field_mask  # type: ignore
+from google.protobuf import timestamp_pb2 as timestamp  # type: ignore
 from google.pubsub_v1.services.subscriber import SubscriberClient
 from google.pubsub_v1.services.subscriber import pagers
 from google.pubsub_v1.services.subscriber import transports
 from google.pubsub_v1.types import pubsub
+
+
+def client_cert_source_callback():
+    return b"cert bytes", b"key bytes"
+
+
+def test__get_default_mtls_endpoint():
+    api_endpoint = "example.googleapis.com"
+    api_mtls_endpoint = "example.mtls.googleapis.com"
+    sandbox_endpoint = "example.sandbox.googleapis.com"
+    sandbox_mtls_endpoint = "example.mtls.sandbox.googleapis.com"
+    non_googleapi = "api.example.com"
+
+    assert SubscriberClient._get_default_mtls_endpoint(None) == None
+    assert SubscriberClient._get_default_mtls_endpoint(api_endpoint) == api_mtls_endpoint
+    assert SubscriberClient._get_default_mtls_endpoint(api_mtls_endpoint) == api_mtls_endpoint
+    assert SubscriberClient._get_default_mtls_endpoint(sandbox_endpoint) == sandbox_mtls_endpoint
+    assert SubscriberClient._get_default_mtls_endpoint(sandbox_mtls_endpoint) == sandbox_mtls_endpoint
+    assert SubscriberClient._get_default_mtls_endpoint(non_googleapi) == non_googleapi
 
 
 def test_subscriber_client_from_service_account_file():
@@ -42,30 +64,82 @@ def test_subscriber_client_from_service_account_file():
         client = SubscriberClient.from_service_account_json("dummy/file/path.json")
         assert client._transport._credentials == creds
 
-        assert client._transport._host == 'pubsub.googleapis.com'
+        assert client._transport._host == 'pubsub.googleapis.com:443'
 
 
 def test_subscriber_client_client_options():
-    # Check the default options have their expected values.
-    assert SubscriberClient.DEFAULT_OPTIONS.api_endpoint == 'pubsub.googleapis.com'
+    # Check that if channel is provided we won't create a new one.
+    with mock.patch('google.pubsub_v1.services.subscriber.SubscriberClient.get_transport_class') as gtc:
+        transport = transports.SubscriberGrpcTransport(
+            credentials=credentials.AnonymousCredentials()
+        )
+        client = SubscriberClient(transport=transport)
+        gtc.assert_not_called()
 
-    # Check that options can be customized.
-    options = client_options.ClientOptions(api_endpoint="squid.clam.whelk")
+    # Check mTLS is not triggered with empty client options.
+    options = client_options.ClientOptions()
     with mock.patch('google.pubsub_v1.services.subscriber.SubscriberClient.get_transport_class') as gtc:
         transport = gtc.return_value = mock.MagicMock()
-        client = SubscriberClient(
-            client_options=options
+        client = SubscriberClient(client_options=options)
+        transport.assert_called_once_with(
+            credentials=None,
+            host=client.DEFAULT_ENDPOINT,
         )
-        transport.assert_called_once_with(credentials=None, host="squid.clam.whelk")
 
+    # Check mTLS is not triggered if api_endpoint is provided but
+    # client_cert_source is None.
+    options = client_options.ClientOptions(api_endpoint="squid.clam.whelk")
+    with mock.patch('google.pubsub_v1.services.subscriber.transports.SubscriberGrpcTransport.__init__') as grpc_transport:
+        grpc_transport.return_value = None
+        client = SubscriberClient(client_options=options)
+        grpc_transport.assert_called_once_with(
+            api_mtls_endpoint=None,
+            client_cert_source=None,
+            credentials=None,
+            host="squid.clam.whelk",
+        )
+
+    # Check mTLS is triggered if client_cert_source is provided.
+    options = client_options.ClientOptions(
+        client_cert_source=client_cert_source_callback
+    )
+    with mock.patch('google.pubsub_v1.services.subscriber.transports.SubscriberGrpcTransport.__init__') as grpc_transport:
+        grpc_transport.return_value = None
+        client = SubscriberClient(client_options=options)
+        grpc_transport.assert_called_once_with(
+            api_mtls_endpoint=client.DEFAULT_MTLS_ENDPOINT,
+            client_cert_source=client_cert_source_callback,
+            credentials=None,
+            host=client.DEFAULT_ENDPOINT,
+        )
+
+    # Check mTLS is triggered if api_endpoint and client_cert_source are provided.
+    options = client_options.ClientOptions(
+        api_endpoint="squid.clam.whelk",
+        client_cert_source=client_cert_source_callback
+    )
+    with mock.patch('google.pubsub_v1.services.subscriber.transports.SubscriberGrpcTransport.__init__') as grpc_transport:
+        grpc_transport.return_value = None
+        client = SubscriberClient(client_options=options)
+        grpc_transport.assert_called_once_with(
+            api_mtls_endpoint="squid.clam.whelk",
+            client_cert_source=client_cert_source_callback,
+            credentials=None,
+            host="squid.clam.whelk",
+        )
 
 def test_subscriber_client_client_options_from_dict():
-    with mock.patch('google.pubsub_v1.services.subscriber.SubscriberClient.get_transport_class') as gtc:
-        transport = gtc.return_value = mock.MagicMock()
+    with mock.patch('google.pubsub_v1.services.subscriber.transports.SubscriberGrpcTransport.__init__') as grpc_transport:
+        grpc_transport.return_value = None
         client = SubscriberClient(
             client_options={'api_endpoint': 'squid.clam.whelk'}
         )
-        transport.assert_called_once_with(credentials=None, host="squid.clam.whelk")
+        grpc_transport.assert_called_once_with(
+            api_mtls_endpoint=None,
+            client_cert_source=None,
+            credentials=None,
+            host="squid.clam.whelk",
+        )
 
 
 def test_create_subscription(transport: str = 'grpc'):
@@ -105,8 +179,10 @@ def test_create_subscription(transport: str = 'grpc'):
     assert response.name == 'name_value'
     assert response.topic == 'topic_value'
     assert response.ack_deadline_seconds == 2066
-    assert response.retain_acked_messages == True
-    assert response.enable_message_ordering == True
+
+    assert response.retain_acked_messages is True
+
+    assert response.enable_message_ordering is True
     assert response.filter == 'filter_value'
 
 
@@ -195,8 +271,10 @@ def test_get_subscription(transport: str = 'grpc'):
     assert response.name == 'name_value'
     assert response.topic == 'topic_value'
     assert response.ack_deadline_seconds == 2066
-    assert response.retain_acked_messages == True
-    assert response.enable_message_ordering == True
+
+    assert response.retain_acked_messages is True
+
+    assert response.enable_message_ordering is True
     assert response.filter == 'filter_value'
 
 
@@ -216,7 +294,7 @@ def test_get_subscription_field_headers():
             type(client._transport.get_subscription),
             '__call__') as call:
         call.return_value = pubsub.Subscription()
-        response = client.get_subscription(request)
+        client.get_subscription(request)
 
         # Establish that the underlying gRPC stub method was called.
         assert len(call.mock_calls) == 1
@@ -307,8 +385,10 @@ def test_update_subscription(transport: str = 'grpc'):
     assert response.name == 'name_value'
     assert response.topic == 'topic_value'
     assert response.ack_deadline_seconds == 2066
-    assert response.retain_acked_messages == True
-    assert response.enable_message_ordering == True
+
+    assert response.retain_acked_messages is True
+
+    assert response.enable_message_ordering is True
     assert response.filter == 'filter_value'
 
 
@@ -360,7 +440,7 @@ def test_list_subscriptions_field_headers():
             type(client._transport.list_subscriptions),
             '__call__') as call:
         call.return_value = pubsub.ListSubscriptionsResponse()
-        response = client.list_subscriptions(request)
+        client.list_subscriptions(request)
 
         # Establish that the underlying gRPC stub method was called.
         assert len(call.mock_calls) == 1
@@ -455,8 +535,8 @@ def test_list_subscriptions_pager():
             request={},
         )]
         assert len(results) == 6
-        assert all([isinstance(i, pubsub.Subscription)
-                    for i in results])
+        assert all(isinstance(i, pubsub.Subscription)
+                   for i in results)
 
 def test_list_subscriptions_pages():
     client = SubscriberClient(
@@ -941,7 +1021,7 @@ def test_get_snapshot_field_headers():
             type(client._transport.get_snapshot),
             '__call__') as call:
         call.return_value = pubsub.Snapshot()
-        response = client.get_snapshot(request)
+        client.get_snapshot(request)
 
         # Establish that the underlying gRPC stub method was called.
         assert len(call.mock_calls) == 1
@@ -1043,7 +1123,7 @@ def test_list_snapshots_field_headers():
             type(client._transport.list_snapshots),
             '__call__') as call:
         call.return_value = pubsub.ListSnapshotsResponse()
-        response = client.list_snapshots(request)
+        client.list_snapshots(request)
 
         # Establish that the underlying gRPC stub method was called.
         assert len(call.mock_calls) == 1
@@ -1138,8 +1218,8 @@ def test_list_snapshots_pager():
             request={},
         )]
         assert len(results) == 6
-        assert all([isinstance(i, pubsub.Snapshot)
-                    for i in results])
+        assert all(isinstance(i, pubsub.Snapshot)
+                   for i in results)
 
 def test_list_snapshots_pages():
     client = SubscriberClient(
@@ -1458,7 +1538,7 @@ def test_subscriber_auth_adc():
     # If no credentials are provided, we should use ADC credentials.
     with mock.patch.object(auth, 'default') as adc:
         adc.return_value = (credentials.AnonymousCredentials(), None)
-        client = SubscriberClient()
+        SubscriberClient()
         adc.assert_called_once_with(scopes=(
             'https://www.googleapis.com/auth/cloud-platform',
             'https://www.googleapis.com/auth/pubsub',
@@ -1485,19 +1565,94 @@ def test_subscriber_host_with_port():
 
 def test_subscriber_grpc_transport_channel():
     channel = grpc.insecure_channel('http://localhost/')
+
+    # Check that if channel is provided, mtls endpoint and client_cert_source
+    # won't be used.
+    callback = mock.MagicMock()
     transport = transports.SubscriberGrpcTransport(
+        host="squid.clam.whelk",
         channel=channel,
+        api_mtls_endpoint="mtls.squid.clam.whelk",
+        client_cert_source=callback,
     )
-    assert transport.grpc_channel is channel
+    assert transport.grpc_channel == channel
+    assert transport._host == "squid.clam.whelk:443"
+    assert not callback.called
 
 
-def test_subscription_path():
-  project = "squid"
-  subscription = "clam"
+@mock.patch("grpc.ssl_channel_credentials", autospec=True)
+@mock.patch("google.api_core.grpc_helpers.create_channel", autospec=True)
+def test_subscriber_grpc_transport_channel_mtls_with_client_cert_source(
+    grpc_create_channel, grpc_ssl_channel_cred
+):
+    # Check that if channel is None, but api_mtls_endpoint and client_cert_source
+    # are provided, then a mTLS channel will be created.
+    mock_cred = mock.Mock()
 
-  expected = "projects/{project}/subscriptions/{subscription}".format(project=project, subscription=subscription, )
-  actual = SubscriberClient.subscription_path(project, subscription)
-  assert expected == actual
+    mock_ssl_cred = mock.Mock()
+    grpc_ssl_channel_cred.return_value = mock_ssl_cred
+
+    mock_grpc_channel = mock.Mock()
+    grpc_create_channel.return_value = mock_grpc_channel
+
+    transport = transports.SubscriberGrpcTransport(
+        host="squid.clam.whelk",
+        credentials=mock_cred,
+        api_mtls_endpoint="mtls.squid.clam.whelk",
+        client_cert_source=client_cert_source_callback,
+    )
+    grpc_ssl_channel_cred.assert_called_once_with(
+        certificate_chain=b"cert bytes", private_key=b"key bytes"
+    )
+    grpc_create_channel.assert_called_once_with(
+        "mtls.squid.clam.whelk:443",
+        credentials=mock_cred,
+        ssl_credentials=mock_ssl_cred,
+        scopes=(
+            'https://www.googleapis.com/auth/cloud-platform',
+            'https://www.googleapis.com/auth/pubsub',
+        ),
+    )
+    assert transport.grpc_channel == mock_grpc_channel
+
+
+@pytest.mark.parametrize(
+    "api_mtls_endpoint", ["mtls.squid.clam.whelk", "mtls.squid.clam.whelk:443"]
+)
+@mock.patch("google.api_core.grpc_helpers.create_channel", autospec=True)
+def test_subscriber_grpc_transport_channel_mtls_with_adc(
+    grpc_create_channel, api_mtls_endpoint
+):
+    # Check that if channel and client_cert_source are None, but api_mtls_endpoint
+    # is provided, then a mTLS channel will be created with SSL ADC.
+    mock_grpc_channel = mock.Mock()
+    grpc_create_channel.return_value = mock_grpc_channel
+
+    # Mock google.auth.transport.grpc.SslCredentials class.
+    mock_ssl_cred = mock.Mock()
+    with mock.patch.multiple(
+        "google.auth.transport.grpc.SslCredentials",
+        __init__=mock.Mock(return_value=None),
+        ssl_credentials=mock.PropertyMock(return_value=mock_ssl_cred),
+    ):
+        mock_cred = mock.Mock()
+        transport = transports.SubscriberGrpcTransport(
+            host="squid.clam.whelk",
+            credentials=mock_cred,
+            api_mtls_endpoint=api_mtls_endpoint,
+            client_cert_source=None,
+        )
+        grpc_create_channel.assert_called_once_with(
+            "mtls.squid.clam.whelk:443",
+            credentials=mock_cred,
+            ssl_credentials=mock_ssl_cred,
+            scopes=(
+                'https://www.googleapis.com/auth/cloud-platform',
+                'https://www.googleapis.com/auth/pubsub',
+            ),
+        )
+        assert transport.grpc_channel == mock_grpc_channel
+
 
 def test_snapshot_path():
   project = "squid"
@@ -1505,4 +1660,12 @@ def test_snapshot_path():
 
   expected = "projects/{project}/snapshots/{snapshot}".format(project=project, snapshot=snapshot, )
   actual = SubscriberClient.snapshot_path(project, snapshot)
+  assert expected == actual
+
+def test_subscription_path():
+  project = "squid"
+  subscription = "clam"
+
+  expected = "projects/{project}/subscriptions/{subscription}".format(project=project, subscription=subscription, )
+  actual = SubscriberClient.subscription_path(project, subscription)
   assert expected == actual

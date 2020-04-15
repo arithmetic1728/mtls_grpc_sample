@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2019  Google LLC
+# Copyright 2020 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -87,6 +87,7 @@ __all__ = (
     'ModifyPushConfigRequest',
     'PublishRequest',
     'PublishResponse',
+    'PublisherClient',
     'PubsubMessage',
     'PullRequest',
     'PullResponse',
@@ -98,11 +99,10 @@ __all__ = (
     'Snapshot',
     'StreamingPullRequest',
     'StreamingPullResponse',
-    'SubscriberClient',
     'Subscription',
     'Topic',
     'UpdateSnapshotRequest',
     'UpdateSubscriptionRequest',
     'UpdateTopicRequest',
-'PublisherClient',
+'SubscriberClient',
 )

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2019  Google LLC
+# Copyright 2020 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,8 @@
 #
 
 from collections import OrderedDict
-from typing import Dict, Iterable, Iterator, Sequence, Tuple, Type, Union
+import re
+from typing import Callable, Dict, Iterable, Iterator, Sequence, Tuple, Type, Union
 import pkg_resources
 
 import google.api_core.client_options as ClientOptions # type: ignore
@@ -27,7 +28,6 @@ from google.auth import credentials                    # type: ignore
 from google.oauth2 import service_account              # type: ignore
 
 from google.protobuf import duration_pb2 as duration  # type: ignore
-from google.protobuf import field_mask_pb2 as field_mask  # type: ignore
 from google.protobuf import timestamp_pb2 as timestamp  # type: ignore
 from google.pubsub_v1.services.subscriber import pagers
 from google.pubsub_v1.types import pubsub
@@ -74,7 +74,39 @@ class SubscriberClient(metaclass=SubscriberClientMeta):
     method.
     """
 
-    DEFAULT_OPTIONS = ClientOptions.ClientOptions(api_endpoint='pubsub.googleapis.com')
+    @staticmethod
+    def _get_default_mtls_endpoint(api_endpoint):
+        """Convert api endpoint to mTLS endpoint.
+        Convert "*.sandbox.googleapis.com" and "*.googleapis.com" to
+        "*.mtls.sandbox.googleapis.com" and "*.mtls.googleapis.com" respectively.
+        Args:
+            api_endpoint (Optional[str]): the api endpoint to convert.
+        Returns:
+            str: converted mTLS api endpoint.
+        """
+        if not api_endpoint:
+            return api_endpoint
+
+        mtls_endpoint_re = re.compile(
+            r"(?P<name>[^.]+)(?P<mtls>\.mtls)?(?P<sandbox>\.sandbox)?(?P<googledomain>\.googleapis\.com)?"
+        )
+
+        m = mtls_endpoint_re.match(api_endpoint)
+        name, mtls, sandbox, googledomain = m.groups()
+        if mtls or not googledomain:
+            return api_endpoint
+
+        if sandbox:
+            return api_endpoint.replace(
+                "sandbox.googleapis.com", "mtls.sandbox.googleapis.com"
+            )
+
+        return api_endpoint.replace(".googleapis.com", ".mtls.googleapis.com")
+
+    DEFAULT_ENDPOINT = 'pubsub.googleapis.com'
+    DEFAULT_MTLS_ENDPOINT = _get_default_mtls_endpoint.__func__(  # type: ignore
+        DEFAULT_ENDPOINT
+    )
 
     @classmethod
     def from_service_account_file(cls, filename: str, *args, **kwargs):
@@ -98,18 +130,19 @@ class SubscriberClient(metaclass=SubscriberClientMeta):
     from_service_account_json = from_service_account_file
 
     @staticmethod
-    def subscription_path(project: str,subscription: str,) -> str:
-        """Return a fully-qualified subscription string."""
-        return "projects/{project}/subscriptions/{subscription}".format(project=project, subscription=subscription, )
-    @staticmethod
     def snapshot_path(project: str,snapshot: str,) -> str:
         """Return a fully-qualified snapshot string."""
         return "projects/{project}/snapshots/{snapshot}".format(project=project, snapshot=snapshot, )
 
+    @staticmethod
+    def subscription_path(project: str,subscription: str,) -> str:
+        """Return a fully-qualified subscription string."""
+        return "projects/{project}/subscriptions/{subscription}".format(project=project, subscription=subscription, )
+
     def __init__(self, *,
             credentials: credentials.Credentials = None,
             transport: Union[str, SubscriberTransport] = None,
-            client_options: ClientOptions = DEFAULT_OPTIONS,
+            client_options: ClientOptions = None,
             ) -> None:
         """Instantiate the subscriber client.
 
@@ -123,6 +156,17 @@ class SubscriberClient(metaclass=SubscriberClientMeta):
                 transport to use. If set to None, a transport is chosen
                 automatically.
             client_options (ClientOptions): Custom options for the client.
+                (1) The ``api_endpoint`` property can be used to override the
+                default endpoint provided by the client.
+                (2) If ``transport`` argument is None, ``client_options`` can be
+                used to create a mutual TLS transport. If ``client_cert_source``
+                is provided, mutual TLS transport will be created with the given
+                ``api_endpoint`` or the default mTLS endpoint, and the client
+                SSL credentials obtained from ``client_cert_source``.
+
+        Raises:
+            google.auth.exceptions.MutualTlsChannelError: If mutual TLS transport
+                creation failed for any reason.
         """
         if isinstance(client_options, dict):
             client_options = ClientOptions.from_dict(client_options)
@@ -131,15 +175,44 @@ class SubscriberClient(metaclass=SubscriberClientMeta):
         # Ordinarily, we provide the transport, but allowing a custom transport
         # instance provides an extensibility point for unusual situations.
         if isinstance(transport, SubscriberTransport):
+            # transport is a SubscriberTransport instance.
             if credentials:
                 raise ValueError('When providing a transport instance, '
                                  'provide its credentials directly.')
             self._transport = transport
-        else:
+        elif client_options is None or (
+            client_options.api_endpoint == None
+            and client_options.client_cert_source is None
+        ):
+            # Don't trigger mTLS if we get an empty ClientOptions.
             Transport = type(self).get_transport_class(transport)
             self._transport = Transport(
+                credentials=credentials, host=self.DEFAULT_ENDPOINT
+            )
+        else:
+            # We have a non-empty ClientOptions. If client_cert_source is
+            # provided, trigger mTLS with user provided endpoint or the default
+            # mTLS endpoint.
+            if client_options.client_cert_source:
+                api_mtls_endpoint = (
+                    client_options.api_endpoint
+                    if client_options.api_endpoint
+                    else self.DEFAULT_MTLS_ENDPOINT
+                )
+            else:
+                api_mtls_endpoint = None
+
+            api_endpoint = (
+                client_options.api_endpoint
+                if client_options.api_endpoint
+                else self.DEFAULT_ENDPOINT
+            )
+
+            self._transport = SubscriberGrpcTransport(
                 credentials=credentials,
-                host=client_options.api_endpoint or 'pubsub.googleapis.com',
+                host=api_endpoint,
+                api_mtls_endpoint=api_mtls_endpoint,
+                client_cert_source=client_options.client_cert_source,
             )
 
     def create_subscription(self,
@@ -245,9 +318,11 @@ class SubscriberClient(metaclass=SubscriberClientMeta):
             raise ValueError('If the `request` argument is set, then none of '
                              'the individual field arguments should be set.')
 
+        request = pubsub.Subscription(request)
+
         # If we have keyword arguments corresponding to fields on the
         # request, apply these.
-        request = pubsub.Subscription(request)
+
         if name is not None:
             request.name = name
         if topic is not None:
@@ -314,9 +389,11 @@ class SubscriberClient(metaclass=SubscriberClientMeta):
             raise ValueError('If the `request` argument is set, then none of '
                              'the individual field arguments should be set.')
 
+        request = pubsub.GetSubscriptionRequest(request)
+
         # If we have keyword arguments corresponding to fields on the
         # request, apply these.
-        request = pubsub.GetSubscriptionRequest(request)
+
         if subscription is not None:
             request.subscription = subscription
 
@@ -374,6 +451,7 @@ class SubscriberClient(metaclass=SubscriberClientMeta):
                 A subscription resource.
         """
         # Create or coerce a protobuf request object.
+
         request = pubsub.UpdateSubscriptionRequest(request)
 
         # Wrap the RPC method; this adds retry and timeout information,
@@ -437,9 +515,11 @@ class SubscriberClient(metaclass=SubscriberClientMeta):
             raise ValueError('If the `request` argument is set, then none of '
                              'the individual field arguments should be set.')
 
+        request = pubsub.ListSubscriptionsRequest(request)
+
         # If we have keyword arguments corresponding to fields on the
         # request, apply these.
-        request = pubsub.ListSubscriptionsRequest(request)
+
         if project is not None:
             request.project = project
 
@@ -517,9 +597,11 @@ class SubscriberClient(metaclass=SubscriberClientMeta):
             raise ValueError('If the `request` argument is set, then none of '
                              'the individual field arguments should be set.')
 
+        request = pubsub.DeleteSubscriptionRequest(request)
+
         # If we have keyword arguments corresponding to fields on the
         # request, apply these.
-        request = pubsub.DeleteSubscriptionRequest(request)
+
         if subscription is not None:
             request.subscription = subscription
 
@@ -600,9 +682,11 @@ class SubscriberClient(metaclass=SubscriberClientMeta):
             raise ValueError('If the `request` argument is set, then none of '
                              'the individual field arguments should be set.')
 
+        request = pubsub.ModifyAckDeadlineRequest(request)
+
         # If we have keyword arguments corresponding to fields on the
         # request, apply these.
-        request = pubsub.ModifyAckDeadlineRequest(request)
+
         if subscription is not None:
             request.subscription = subscription
         if ack_ids is not None:
@@ -675,9 +759,11 @@ class SubscriberClient(metaclass=SubscriberClientMeta):
             raise ValueError('If the `request` argument is set, then none of '
                              'the individual field arguments should be set.')
 
+        request = pubsub.AcknowledgeRequest(request)
+
         # If we have keyword arguments corresponding to fields on the
         # request, apply these.
-        request = pubsub.AcknowledgeRequest(request)
+
         if subscription is not None:
             request.subscription = subscription
         if ack_ids is not None:
@@ -763,9 +849,11 @@ class SubscriberClient(metaclass=SubscriberClientMeta):
             raise ValueError('If the `request` argument is set, then none of '
                              'the individual field arguments should be set.')
 
+        request = pubsub.PullRequest(request)
+
         # If we have keyword arguments corresponding to fields on the
         # request, apply these.
-        request = pubsub.PullRequest(request)
+
         if subscription is not None:
             request.subscription = subscription
         if return_immediately is not None:
@@ -900,9 +988,11 @@ class SubscriberClient(metaclass=SubscriberClientMeta):
             raise ValueError('If the `request` argument is set, then none of '
                              'the individual field arguments should be set.')
 
+        request = pubsub.ModifyPushConfigRequest(request)
+
         # If we have keyword arguments corresponding to fields on the
         # request, apply these.
-        request = pubsub.ModifyPushConfigRequest(request)
+
         if subscription is not None:
             request.subscription = subscription
         if push_config is not None:
@@ -977,9 +1067,11 @@ class SubscriberClient(metaclass=SubscriberClientMeta):
             raise ValueError('If the `request` argument is set, then none of '
                              'the individual field arguments should be set.')
 
+        request = pubsub.GetSnapshotRequest(request)
+
         # If we have keyword arguments corresponding to fields on the
         # request, apply these.
-        request = pubsub.GetSnapshotRequest(request)
+
         if snapshot is not None:
             request.snapshot = snapshot
 
@@ -1058,9 +1150,11 @@ class SubscriberClient(metaclass=SubscriberClientMeta):
             raise ValueError('If the `request` argument is set, then none of '
                              'the individual field arguments should be set.')
 
+        request = pubsub.ListSnapshotsRequest(request)
+
         # If we have keyword arguments corresponding to fields on the
         # request, apply these.
-        request = pubsub.ListSnapshotsRequest(request)
+
         if project is not None:
             request.project = project
 
@@ -1183,9 +1277,11 @@ class SubscriberClient(metaclass=SubscriberClientMeta):
             raise ValueError('If the `request` argument is set, then none of '
                              'the individual field arguments should be set.')
 
+        request = pubsub.CreateSnapshotRequest(request)
+
         # If we have keyword arguments corresponding to fields on the
         # request, apply these.
-        request = pubsub.CreateSnapshotRequest(request)
+
         if name is not None:
             request.name = name
         if subscription is not None:
@@ -1251,6 +1347,7 @@ class SubscriberClient(metaclass=SubscriberClientMeta):
 
         """
         # Create or coerce a protobuf request object.
+
         request = pubsub.UpdateSnapshotRequest(request)
 
         # Wrap the RPC method; this adds retry and timeout information,
@@ -1318,9 +1415,11 @@ class SubscriberClient(metaclass=SubscriberClientMeta):
             raise ValueError('If the `request` argument is set, then none of '
                              'the individual field arguments should be set.')
 
+        request = pubsub.DeleteSnapshotRequest(request)
+
         # If we have keyword arguments corresponding to fields on the
         # request, apply these.
-        request = pubsub.DeleteSnapshotRequest(request)
+
         if snapshot is not None:
             request.snapshot = snapshot
 
@@ -1375,6 +1474,7 @@ class SubscriberClient(metaclass=SubscriberClientMeta):
 
         """
         # Create or coerce a protobuf request object.
+
         request = pubsub.SeekRequest(request)
 
         # Wrap the RPC method; this adds retry and timeout information,

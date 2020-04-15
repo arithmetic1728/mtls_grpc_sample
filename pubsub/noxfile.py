@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2019  Google LLC
+# Copyright 2020 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,28 +20,30 @@ import os
 import nox  # type: ignore
 
 
-@nox.session(python=["3.6", "3.7"])
+@nox.session(python=['3.6', '3.7'])
 def unit(session):
     """Run the unit test suite."""
 
-    session.install("-e", "../python-api-core")
-    session.install("coverage", "pytest", "pytest-cov")
-    session.install("-e", ".")
+    session.install('coverage', 'pytest', 'pytest-cov')
+    session.install('-e', '.')
 
     session.run(
-        "py.test",
-        "--quiet",
-        "--cov=google/pubsub_v1/services/publisher/",
-        "--cov-config=.coveragerc",
-        "--cov-report=term",
-        "--cov-report=html",
-        os.path.join("tests", "unit", "pubsub_v1", "test_publisher.py"),
+        'py.test',
+        '--quiet',
+        '--cov=google/pubsub_v1/',
+        '--cov-config=.coveragerc',
+        '--cov-report=term',
+        '--cov-report=html',
+        os.path.join('tests', 'unit', 'pubsub_v1'),
     )
 
 
-@nox.session(python=["3.6", "3.7"])
+@nox.session(python=['3.6', '3.7'])
 def mypy(session):
     """Run the type checker."""
-    session.install("mypy")
-    session.install(".")
-    session.run("mypy", "google")
+    session.install('mypy')
+    session.install('.')
+    session.run(
+        'mypy',
+        'google',
+    )
