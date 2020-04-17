@@ -203,11 +203,10 @@ class UpdateTopicRequest(proto.Message):
         update_mask (~.field_mask.FieldMask):
             Required. Indicates which fields in the provided topic to
             update. Must be specified and non-empty. Note that if
-            ``update_mask`` contains "message\_storage\_policy" then the
-            new value will be determined based on the policy configured
-            at the project or organization level. The
-            ``message_storage_policy`` must not be set in the ``topic``
-            provided above.
+            ``update_mask`` contains "message_storage_policy" but the
+            ``message_storage_policy`` is not set in the ``topic``
+            provided above, then the updated value is determined by the
+            policy configured at the project or organization level.
     """
 
     topic = proto.Field(proto.MESSAGE, number=1,
@@ -485,18 +484,14 @@ class Subscription(proto.Message):
             subject to any SLA or deprecation policy.
         dead_letter_policy (~.pubsub.DeadLetterPolicy):
             A policy that specifies the conditions for dead lettering
-            messages in this subscription. If dead\_letter\_policy is
-            not set, dead lettering is disabled.
+            messages in this subscription. If dead_letter_policy is not
+            set, dead lettering is disabled.
 
             The Cloud Pub/Sub service account associated with this
             subscriptions's parent project (i.e.,
-            service-{project\_number}@gcp-sa-pubsub.iam.gserviceaccount.com)
+            service-{project_number}@gcp-sa-pubsub.iam.gserviceaccount.com)
             must have permission to Acknowledge() messages on this
-            subscription. EXPERIMENTAL: This feature is part of a closed
-            alpha release. This API might be changed in
-            backward-incompatible ways and is not recommended for
-            production use. It is not subject to any SLA or deprecation
-            policy.
+            subscription.
         retry_policy (~.pubsub.RetryPolicy):
             A policy that specifies how Cloud Pub/Sub
             retries message delivery for this subscription.
@@ -540,8 +535,7 @@ class RetryPolicy(proto.Message):
     r"""A policy that specifies how Cloud Pub/Sub retries message delivery.
 
     Retry delay will be exponential based on provided minimum and
-    maximum backoffs.
-    https://en.wikipedia.org/wiki/Exponential\_backoff.
+    maximum backoffs. https://en.wikipedia.org/wiki/Exponential_backoff.
 
     RetryPolicy will be triggered on NACKs or acknowledgement deadline
     exceeded events for a given message.
@@ -587,7 +581,7 @@ class DeadLetterPolicy(proto.Message):
             ``projects/{project}/topics/{topic}``.The Cloud Pub/Sub
             service account associated with the enclosing subscription's
             parent project (i.e.,
-            service-{project\_number}@gcp-sa-pubsub.iam.gserviceaccount.com)
+            service-{project_number}@gcp-sa-pubsub.iam.gserviceaccount.com)
             must have permission to Publish() to this topic.
 
             The operation will fail if the topic does not exist. Users
@@ -604,7 +598,7 @@ class DeadLetterPolicy(proto.Message):
 
             A NACK is any call to ModifyAckDeadline with a 0 deadline.
             Note that client libraries may automatically extend
-            ack\_deadlines.
+            ack_deadlines.
 
             This field will be honored on a best effort basis.
 
@@ -640,9 +634,9 @@ class PushConfig(proto.Message):
 
     Attributes:
         push_endpoint (str):
-            A URL locating the endpoint to which messages
-            should be pushed. For example, a Webhook
-            endpoint might use "https://example.com/push".
+            A URL locating the endpoint to which messages should be
+            pushed. For example, a Webhook endpoint might use
+            ``https://example.com/push``.
         attributes (Sequence[~.pubsub.PushConfig.AttributesEntry]):
             Endpoint configuration attributes that can be used to
             control different aspects of the message delivery.
@@ -724,12 +718,12 @@ class ReceivedMessage(proto.Message):
             The message.
         delivery_attempt (int):
             Delivery attempt counter is 1 + (the sum of number of NACKs
-            and number of ack\_deadline exceeds) for this message.
+            and number of ack_deadline exceeds) for this message.
 
             A NACK is any call to ModifyAckDeadline with a 0 deadline.
-            An ack\_deadline exceeds event is whenever a message is not
-            acknowledged within ack\_deadline. Note that ack\_deadline
-            is initially Subscription.ackDeadlineSeconds, but may get
+            An ack_deadline exceeds event is whenever a message is not
+            acknowledged within ack_deadline. Note that ack_deadline is
+            initially Subscription.ackDeadlineSeconds, but may get
             extended automatically by the client library.
 
             The first delivery of a given message will have this value
@@ -1007,10 +1001,10 @@ class StreamingPullRequest(proto.Message):
             A unique identifier that is used to distinguish client
             instances from each other. Only needs to be provided on the
             initial request. When a stream disconnects and reconnects
-            for the same stream, the client\_id should be set to the
-            same value so that state associated with the old stream can
-            be transferred to the new stream. The same client\_id should
-            not be used for different client instances.
+            for the same stream, the client_id should be set to the same
+            value so that state associated with the old stream can be
+            transferred to the new stream. The same client_id should not
+            be used for different client instances.
     """
 
     subscription = proto.Field(proto.STRING, number=1)

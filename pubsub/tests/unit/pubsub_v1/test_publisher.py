@@ -1066,9 +1066,22 @@ def test_publisher_grpc_transport_channel_mtls_with_adc(
 
 
 def test_topic_path():
-  project = "squid"
-  topic = "clam"
+    project = "squid"
+    topic = "clam"
 
-  expected = "projects/{project}/topics/{topic}".format(project=project, topic=topic, )
-  actual = PublisherClient.topic_path(project, topic)
-  assert expected == actual
+    expected = "projects/{project}/topics/{topic}".format(project=project, topic=topic, )
+    actual = PublisherClient.topic_path(project, topic)
+    assert expected == actual
+
+
+def test_parse_topic_path():
+    expected = {
+    "project": "whelk",
+    "topic": "octopus",
+
+    }
+    path = PublisherClient.topic_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = PublisherClient.parse_topic_path(path)
+    assert expected == actual

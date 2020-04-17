@@ -1655,17 +1655,43 @@ def test_subscriber_grpc_transport_channel_mtls_with_adc(
 
 
 def test_snapshot_path():
-  project = "squid"
-  snapshot = "clam"
+    project = "squid"
+    snapshot = "clam"
 
-  expected = "projects/{project}/snapshots/{snapshot}".format(project=project, snapshot=snapshot, )
-  actual = SubscriberClient.snapshot_path(project, snapshot)
-  assert expected == actual
+    expected = "projects/{project}/snapshots/{snapshot}".format(project=project, snapshot=snapshot, )
+    actual = SubscriberClient.snapshot_path(project, snapshot)
+    assert expected == actual
+
+
+def test_parse_snapshot_path():
+    expected = {
+    "project": "whelk",
+    "snapshot": "octopus",
+
+    }
+    path = SubscriberClient.snapshot_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = SubscriberClient.parse_snapshot_path(path)
+    assert expected == actual
 
 def test_subscription_path():
-  project = "squid"
-  subscription = "clam"
+    project = "squid"
+    subscription = "clam"
 
-  expected = "projects/{project}/subscriptions/{subscription}".format(project=project, subscription=subscription, )
-  actual = SubscriberClient.subscription_path(project, subscription)
-  assert expected == actual
+    expected = "projects/{project}/subscriptions/{subscription}".format(project=project, subscription=subscription, )
+    actual = SubscriberClient.subscription_path(project, subscription)
+    assert expected == actual
+
+
+def test_parse_subscription_path():
+    expected = {
+    "project": "whelk",
+    "subscription": "octopus",
+
+    }
+    path = SubscriberClient.subscription_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = SubscriberClient.parse_subscription_path(path)
+    assert expected == actual

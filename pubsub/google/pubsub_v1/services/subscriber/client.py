@@ -135,9 +135,20 @@ class SubscriberClient(metaclass=SubscriberClientMeta):
         return "projects/{project}/snapshots/{snapshot}".format(project=project, snapshot=snapshot, )
 
     @staticmethod
+    def parse_snapshot_path(path: str) -> Dict[str,str]:
+        """Parse a snapshot path into its component segments."""
+        m = re.match(r"^projects/(?P<project>.+?)/snapshots/(?P<snapshot>.+?)$", path)
+        return m.groupdict() if m else {}
+    @staticmethod
     def subscription_path(project: str,subscription: str,) -> str:
         """Return a fully-qualified subscription string."""
         return "projects/{project}/subscriptions/{subscription}".format(project=project, subscription=subscription, )
+
+    @staticmethod
+    def parse_subscription_path(path: str) -> Dict[str,str]:
+        """Parse a subscription path into its component segments."""
+        m = re.match(r"^projects/(?P<project>.+?)/subscriptions/(?P<subscription>.+?)$", path)
+        return m.groupdict() if m else {}
 
     def __init__(self, *,
             credentials: credentials.Credentials = None,
